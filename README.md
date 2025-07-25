@@ -1,7 +1,138 @@
-**Tiếng Việt**
+## 1. Chuẩn bị Google Cloud Project & bật Slides API
 
-Kế hoạch của bạn về cơ bản là hợp lý, nhưng mình có vài gợi ý để tối ưu hoá và giảm độ phức tạp:
+1. Truy cập Google Cloud Console và **tạo một Project** mới hoặc chọn Project hiện có.
+2. Vào **APIs & Services → Library**, tìm “Google Slides API” và nhấn **Enable**.
+3. Vào **APIs & Services → Credentials**:
 
+   * **OAuth Client ID** (nếu cần phép người dùng đăng nhập qua OAuth)
+   * **Service Account** (để server‑to‑server, thường dùng cho tự động hóa).
+4. Tải về file JSON credentials; nếu dùng Service Account, lưu biến môi trường:
+
+   ```bash
+   export GOOGLE_APPLICATION_CREDENTIALS="/path/to/credentials.json"
+   ```
+
+---
+
+## 2. Cài đặt thư viện client Python
+
+```bash
+pip install --upgrade google-api-python-client google-auth-httplib2 google-auth-oauthlib
+```
+
+Thư viện này sẽ xử lý OAuth flow và gọi REST API dễ dàng ([Google for Developers][1]).
+
+---
+
+## 3. Xác thực & khởi tạo service
+
+Dưới đây là ví dụ dùng Service Account; nếu bạn cần OAuth flow cho user, có thể tham khảo Quickstart ([Google for Developers][2]).
+
+```python
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
+
+# 1) Scope chỉ read‑only
+SCOPES = ['https://www.googleapis.com/auth/presentations.readonly']
+
+# 2) Load credentials và khởi tạo service
+creds = service_account.Credentials.from_service_account_file(
+    'credentials.json', scopes=SCOPES)
+service = build('slides', 'v1', credentials=creds)
+```
+
+---
+
+## 4. Lấy toàn bộ nội dung presentation
+
+Gọi phương thức `presentations.get`, truyền vào `presentationId` (chính là phần `/d/…/` trong URL):
+
+```python
+presentation_id = 'YOUR_SLIDE_ID'
+presentation = service.presentations().get(
+    presentationId=presentation_id
+).execute()
+```
+
+* Kết quả `presentation` là một dict JSON lớn bao gồm:
+
+  * `presentation.slides[]` — mảng slide, mỗi slide có `pageElements` (shape, image, line…)
+  * `presentation.notesMaster` & mỗi `slide.notesPage` chứa **speaker notes**
+  * `presentation.layouts[]`, `presentation.master`… cho **layout** và template ([Google for Developers][3]).
+
+---
+
+## 5. Trích xuất text, hình ảnh, notes
+
+### 5.1. Text từ các shape
+
+```python
+for slide in presentation.get('slides', []):
+    for element in slide.get('pageElements', []):
+        shape = element.get('shape')
+        if shape and 'text' in shape:
+            text_runs = shape['text']['textElements']
+            txt = ''.join(run.get('textRun',{}).get('content','')
+                          for run in text_runs)
+            print('Slide', slide['objectId'], '=>', txt)
+```
+
+### 5.2. Speaker Notes
+
+```python
+for slide in presentation.get('slides', []):
+    notes = slide.get('notesPage',{}).get('pageElements',[])
+    for elem in notes:
+        shp = elem.get('shape')
+        if shp and 'text' in shp:
+            # tương tự như trên
+            ...
+```
+
+### 5.3. Hình ảnh & thumbnail
+
+* Mỗi `pageElement` có `image` field:
+
+  ```python
+  if 'image' in element:
+      url = element['image']['contentUrl']  # URL tạm thời
+      # hoặc gọi pages.getThumbnail để lấy thumbnail :contentReference[oaicite:3]{index=3}
+  ```
+
+---
+
+\## 6. Lưu JSON layout & xử lý tiếp
+
+* Bạn có thể **ghi toàn bộ** `presentation` dict ra file `.json` để lưu layout, slide order, kích thước, master, layout, v.v.
+* Từ JSON này, dễ dàng tạo báo cáo, chuyển sang định dạng khác, hoặc tái dựng lại slide.
+
+---
+
+## 7. Ưu điểm vs. OCR
+
+* **Chính xác**: không phụ thuộc vào chất lượng ảnh, font, ngôn ngữ.
+* **Đầy đủ**: bao gồm cả notes, metadata, layout, object IDs.
+* **Không bị block**: API chỉ yêu cầu quyền “view” (thậm chí UI có chặn download/copy cũng không ảnh hưởng).
+
+---
+
+### Tóm tắt luồng thực thi
+
+1. **Enable API & Credentials** →
+2. **Install & Auth** →
+3. **Build service** →
+4. **GET presentation** →
+5. **Parse JSON** để lấy text, notes, image URLs, layout →
+6. **Xử lý lưu** hoặc generate tiếp.
+
+Với cách tiếp cận này, bạn hoàn toàn kiểm soát dữ liệu slide bằng code, không cần qua bước OCR thủ công.
+
+[1]: https://developers.google.com/workspace/slides/api/guides/libraries?utm_source=chatgpt.com "Install Client Libraries | Google Slides"
+[2]: https://developers.google.com/workspace/slides/api/quickstart/python?utm_source=chatgpt.com "Python quickstart | Google Slides"
+[3]: https://developers.google.com/workspace/slides/api/reference/rest/v1/presentations/get?utm_source=chatgpt.com "Method: presentations.get | Google Slides"
+
+
+---------------------------------------------
 ---
 
 ### 1. Lấy ảnh từng slide bằng Python
