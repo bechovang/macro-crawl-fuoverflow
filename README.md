@@ -1,3 +1,5 @@
+https://grok.com/share/c2hhcmQtMg%3D%3D_8938b474-0e91-44c5-a30c-f0a0fadec5c2
+
 ## 1. Chuẩn bị Google Cloud Project & bật Slides API
 
 1. Truy cập Google Cloud Console và **tạo một Project** mới hoặc chọn Project hiện có.
