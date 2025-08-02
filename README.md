@@ -1,326 +1,251 @@
-https://grok.com/share/c2hhcmQtMg%3D%3D_8938b474-0e91-44c5-a30c-f0a0fadec5c2
+# Google Slides Crawler
 
-## 1. Chuẩn bị Google Cloud Project & bật Slides API
+A Python tool to automatically capture Google Slides presentations, extract text using OCR, and format content with AI assistance using Google's Gemini 1.5.
 
-1. Truy cập Google Cloud Console và **tạo một Project** mới hoặc chọn Project hiện có.
-2. Vào **APIs & Services → Library**, tìm “Google Slides API” và nhấn **Enable**.
-3. Vào **APIs & Services → Credentials**:
+## English Version
 
-   * **OAuth Client ID** (nếu cần phép người dùng đăng nhập qua OAuth)
-   * **Service Account** (để server‑to‑server, thường dùng cho tự động hóa).
-4. Tải về file JSON credentials; nếu dùng Service Account, lưu biến môi trường:
+### Overview
 
+This project provides an automated solution to capture Google Slides presentations, extract text content using Google Cloud Vision API, and format the results using Google's Gemini 1.5 AI. It's particularly useful for creating documentation from presentations or analyzing slide content programmatically.
+
+### Features
+
+- **Automated Slide Capture**: Uses Selenium WebDriver to navigate and capture slides
+- **OCR Text Extraction**: Integrates Google Cloud Vision API for accurate text recognition
+- **AI-Powered Formatting**: Uses Google Gemini 1.5 to clean and structure extracted text
+- **Speaker Notes Support**: Captures both slide content and presenter notes
+- **Batch Processing**: Handles entire presentations with configurable delays
+- **Multiple Output Formats**: Generates screenshots, OCR text, and formatted content
+
+### Prerequisites
+
+- Python 3.8+
+- Google Chrome browser
+- Google Cloud Vision API credentials
+- Google Gemini API key (for text formatting)
+
+### Installation
+
+1. **Clone the repository**
    ```bash
-   export GOOGLE_APPLICATION_CREDENTIALS="/path/to/credentials.json"
+   git clone <repository-url>
+   cd crawl-google-slide
    ```
 
----
+2. **Create and activate virtual environment**
+   ```bash
+   # Windows
+   python -m venv venv
+   venv\Scripts\activate
+   
+   # macOS/Linux
+   python3 -m venv venv
+   source venv/bin/activate
+   ```
 
-## 2. Cài đặt thư viện client Python
+3. **Install dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-```bash
-pip install --upgrade google-api-python-client google-auth-httplib2 google-auth-oauthlib
-```
+4. **Set up Google Cloud Vision API**
+   - Create a Google Cloud project
+   - Enable the Vision API
+   - Create a service account and download credentials JSON
+   - Set environment variable:
+     ```bash
+     # Windows
+     set GOOGLE_APPLICATION_CREDENTIALS=path\to\credentials.json
+     
+     # macOS/Linux
+     export GOOGLE_APPLICATION_CREDENTIALS=path/to/credentials.json
+     ```
 
-Thư viện này sẽ xử lý OAuth flow và gọi REST API dễ dàng ([Google for Developers][1]).
+5. **Configure Gemini API**
+   - Get a Gemini API key from https://makersuite.google.com/app/apikey
+   - The API key is already configured in the project: `AIzaSyBYEKKI0v-5WvixUA4BY9EPLeOul92FYcQ`
 
----
+### Usage
 
-## 3. Xác thực & khởi tạo service
+1. **Basic Usage**
+   ```python
+   from main import GoogleSlidesCapture
+   
+   # Initialize capturer
+   capturer = GoogleSlidesCapture(headless=False)
+   
+   # Process a single slide
+   result = capturer.process_slide(
+       "https://docs.google.com/presentation/d/YOUR_ID/edit",
+       1
+   )
+   
+   # Process entire presentation
+   results = capturer.process_presentation(
+       "https://docs.google.com/presentation/d/YOUR_ID/edit",
+       total_slides=10
+   )
+   
+   capturer.close()
+   ```
 
-Dưới đây là ví dụ dùng Service Account; nếu bạn cần OAuth flow cho user, có thể tham khảo Quickstart ([Google for Developers][2]).
+2. **Command Line Usage**
+   ```bash
+   python main.py
+   ```
 
-```python
-from google.oauth2 import service_account
-from googleapiclient.discovery import build
+### Configuration
 
-# 1) Scope chỉ read‑only
-SCOPES = ['https://www.googleapis.com/auth/presentations.readonly']
+- **Headless Mode**: Set `headless=True` for background processing
+- **Delay Between Slides**: Adjust `SLIDE_DELAY` in config.py to avoid rate limiting
+- **Output Directory**: Screenshots and text files are saved in the current directory
+- **AI Formatting**: Customize the prompt in `config.py` AI_PROMPTS section
 
-# 2) Load credentials và khởi tạo service
-creds = service_account.Credentials.from_service_account_file(
-    'credentials.json', scopes=SCOPES)
-service = build('slides', 'v1', credentials=creds)
-```
+### Output Files
 
----
+For each slide, the tool generates:
+- `slide_{number}_with_notes.png`: Full screenshot
+- `slide_{number}_content.png`: Slide content only
+- `slide_{number}_notes.png`: Speaker notes only
+- `slide_{number}_formatted.txt`: AI-formatted text content
 
-## 4. Lấy toàn bộ nội dung presentation
+### Error Handling
 
-Gọi phương thức `presentations.get`, truyền vào `presentationId` (chính là phần `/d/…/` trong URL):
+- Automatic retry for failed OCR operations
+- Graceful handling of missing speaker notes
+- Logging of processing errors
+- Fallback to basic text extraction if AI formatting fails
 
-```python
-presentation_id = 'YOUR_SLIDE_ID'
-presentation = service.presentations().get(
-    presentationId=presentation_id
-).execute()
-```
+### Security Notes
 
-* Kết quả `presentation` là một dict JSON lớn bao gồm:
-
-  * `presentation.slides[]` — mảng slide, mỗi slide có `pageElements` (shape, image, line…)
-  * `presentation.notesMaster` & mỗi `slide.notesPage` chứa **speaker notes**
-  * `presentation.layouts[]`, `presentation.master`… cho **layout** và template ([Google for Developers][3]).
-
----
-
-## 5. Trích xuất text, hình ảnh, notes
-
-### 5.1. Text từ các shape
-
-```python
-for slide in presentation.get('slides', []):
-    for element in slide.get('pageElements', []):
-        shape = element.get('shape')
-        if shape and 'text' in shape:
-            text_runs = shape['text']['textElements']
-            txt = ''.join(run.get('textRun',{}).get('content','')
-                          for run in text_runs)
-            print('Slide', slide['objectId'], '=>', txt)
-```
-
-### 5.2. Speaker Notes
-
-```python
-for slide in presentation.get('slides', []):
-    notes = slide.get('notesPage',{}).get('pageElements',[])
-    for elem in notes:
-        shp = elem.get('shape')
-        if shp and 'text' in shp:
-            # tương tự như trên
-            ...
-```
-
-### 5.3. Hình ảnh & thumbnail
-
-* Mỗi `pageElement` có `image` field:
-
-  ```python
-  if 'image' in element:
-      url = element['image']['contentUrl']  # URL tạm thời
-      # hoặc gọi pages.getThumbnail để lấy thumbnail :contentReference[oaicite:3]{index=3}
-  ```
-
----
-
-\## 6. Lưu JSON layout & xử lý tiếp
-
-* Bạn có thể **ghi toàn bộ** `presentation` dict ra file `.json` để lưu layout, slide order, kích thước, master, layout, v.v.
-* Từ JSON này, dễ dàng tạo báo cáo, chuyển sang định dạng khác, hoặc tái dựng lại slide.
+- Never commit API keys to version control
+- Use environment variables for sensitive credentials
+- Consider using OAuth for user-specific access
+- Implement proper session management for production use
 
 ---
 
-## 7. Ưu điểm vs. OCR
+## Vietnamese Version
+
+### Tổng quan
+
+Dự án này cung cấp giải pháp tự động để chụp các bài thuyết trình Google Slides, trích xuất nội dung văn bản bằng Google Cloud Vision API và định dạng kết quả bằng Google Gemini 1.5 AI. Đặc biệt hữu ích cho việc tạo tài liệu từ bài thuyết trình hoặc phân tích nội dung slide một cách lập trình.
+
+### Tính năng
+
+- **Chụp Slide Tự động**: Sử dụng Selenium WebDriver để điều hướng và chụp slide
+- **Trích xuất văn bản OCR**: Tích hợp Google Cloud Vision API để nhận dạng văn bản chính xác
+- **Định dạng bằng AI**: Sử dụng Google Gemini 1.5 để làm sạch và cấu trúc văn bản trích xuất
+- **Hỗ trợ Ghi chú**: Chụp cả nội dung slide và ghi chú của người thuyết trình
+- **Xử lý hàng loạt**: Xử lý toàn bộ bài thuyết trình với độ trễ có thể cấu hình
+- **Nhiều định dạng đầu ra**: Tạo ra ảnh chụp màn hình, văn bản OCR và nội dung đã định dạng
+
+### Yêu cầu hệ thống
+
+- Python 3.8+
+- Trình duyệt Google Chrome
+- Thông tin xác thực Google Cloud Vision API
+- Khóa API Google Gemini (để định dạng văn bản)
+
+### Cài đặt
+
+1. **Clone repository**
+   ```bash
+   git clone <repository-url>
+   cd crawl-google-slide
+   ```
+
+2. **Tạo và kích hoạt môi trường ảo**
+   ```bash
+   # Windows
+   python -m venv venv
+   venv\Scripts\activate
+   
+   # macOS/Linux
+   python3 -m venv venv
+   source venv/bin/activate
+   ```
+
+3. **Cài đặt dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Thiết lập Google Cloud Vision API**
+   - Tạo dự án Google Cloud
+   - Bật Vision API
+   - Tạo service account và tải xuống file credentials JSON
+   - Thiết lập biến môi trường:
+     ```bash
+     # Windows
+     set GOOGLE_APPLICATION_CREDENTIALS=path\to\credentials.json
+     
+     # macOS/Linux
+     export GOOGLE_APPLICATION_CREDENTIALS=path/to/credentials.json
+     ```
+
+5. **Cấu hình Gemini API**
+   - Lấy khóa API Gemini từ https://makersuite.google.com/app/apikey
+   - Khóa API đã được cấu hình sẵn trong dự án: `AIzaSyBYEKKI0v-5WvixUA4BY9EPLeOul92FYcQ`
+
+### Cách sử dụng
+
+1. **Sử dụng cơ bản**
+   ```python
+   from main import GoogleSlidesCapture
+   
+   # Khởi tạo capturer
+   capturer = GoogleSlidesCapture(headless=False)
+   
+   # Xử lý một slide
+   result = capturer.process_slide(
+       "https://docs.google.com/presentation/d/YOUR_ID/edit",
+       1
+   )
+   
+   # Xử lý toàn bộ bài thuyết trình
+   results = capturer.process_presentation(
+       "https://docs.google.com/presentation/d/YOUR_ID/edit",
+       total_slides=10
+   )
+   
+   capturer.close()
+   ```
+
+2. **Sử dụng Command Line**
+   ```bash
+   python main.py
+   ```
+
+### Cấu hình
+
+- **Chế độ Headless**: Đặt `headless=True` để xử lý nền
+- **Độ trễ giữa các slide**: Điều chỉnh `SLIDE_DELAY` trong config.py để tránh bị giới hạn tốc độ
+- **Thư mục đầu ra**: Ảnh chụp màn hình và file văn bản được lưu trong thư mục hiện tại
+- **Định dạng AI**: Tùy chỉnh prompt trong phần AI_PROMPTS của config.py
+
+### File đầu ra
+
+Cho mỗi slide, công cụ tạo ra:
+- `slide_{number}_with_notes.png`: Ảnh chụp màn hình đầy đủ
+- `slide_{number}_content.png`: Chỉ nội dung slide
+- `slide_{number}_notes.png`: Chỉ ghi chú
+- `slide_{number}_formatted.txt`: Nội dung văn bản đã định dạng bằng AI
 
-* **Chính xác**: không phụ thuộc vào chất lượng ảnh, font, ngôn ngữ.
-* **Đầy đủ**: bao gồm cả notes, metadata, layout, object IDs.
-* **Không bị block**: API chỉ yêu cầu quyền “view” (thậm chí UI có chặn download/copy cũng không ảnh hưởng).
+### Xử lý lỗi
 
----
+- Tự động thử lại cho các thao tác OCR thất bại
+- Xử lý nhẹ nhàng khi thiếu ghi chú
+- Ghi log các lỗi xử lý
+- Fallback về trích xuất văn bản cơ bản nếu định dạng AI thất bại
 
-### Tóm tắt luồng thực thi
+### Lưu ý bảo mật
 
-1. **Enable API & Credentials** →
-2. **Install & Auth** →
-3. **Build service** →
-4. **GET presentation** →
-5. **Parse JSON** để lấy text, notes, image URLs, layout →
-6. **Xử lý lưu** hoặc generate tiếp.
+- Không bao giờ commit khóa API vào version control
+- Sử dụng biến môi trường cho các thông tin xác thực nhạy cảm
+- Cân nhắc sử dụng OAuth cho quyền truy cập người dùng cụ thể
+- Triển khai quản lý phiên phù hợp cho sử dụng production
 
-Với cách tiếp cận này, bạn hoàn toàn kiểm soát dữ liệu slide bằng code, không cần qua bước OCR thủ công.
+## License
 
-[1]: https://developers.google.com/workspace/slides/api/guides/libraries?utm_source=chatgpt.com "Install Client Libraries | Google Slides"
-[2]: https://developers.google.com/workspace/slides/api/quickstart/python?utm_source=chatgpt.com "Python quickstart | Google Slides"
-[3]: https://developers.google.com/workspace/slides/api/reference/rest/v1/presentations/get?utm_source=chatgpt.com "Method: presentations.get | Google Slides"
-
-
----------------------------------------------
----
-
-### 1. Lấy ảnh từng slide bằng Python
-
-* **Selenium / Playwright**
-
-  * Dùng Chrome headless, login vào Google (nạp cookie hoặc OAuth).
-  * Chuyển qua từng URL slide (ví dụ `https://docs.google.com/presentation/d/SLIDE_ID/edit#slide=id.p3`), đợi DOM tải xong.
-  * Chụp element chứa nội dung slide (selector `.punch-viewer-content` hoặc `.punch-viewer-svg`), tương tự:
-
-    ```python
-    from selenium import webdriver
-    driver = webdriver.Chrome(options=...)
-    driver.get(slide_url)
-    el = driver.find_element_by_css_selector('.punch-viewer-content')
-    el.screenshot(f"slide_{i}.png")
-    ```
-  * Ưu điểm: bạn chỉ chụp vùng chứa slide, tránh thừa thanh menu.
-
-* **Puppeteer (Node.js) qua pyppeteer**
-
-  * Tương tự trên, dễ điều khiển viewport, zoom để đảm bảo đủ độ phân giải.
-
----
-
-### 2. Chuyển ảnh sang văn bản với Google Cloud Vision API
-
-* Cài đặt thư viện:
-
-  ```bash
-  pip install google-cloud-vision
-  ```
-* Ví dụ code:
-
-  ```python
-  from google.cloud import vision
-  client = vision.ImageAnnotatorClient()
-
-  def ocr_image(path):
-      with open(path, "rb") as f:
-          img = vision.Image(content=f.read())
-      resp = client.text_detection(image=img)
-      return resp.text_annotations[0].description if resp.text_annotations else ""
-  ```
-* Lưu ý:
-
-  * Bật chế độ **DOCUMENT\_TEXT\_DETECTION** nếu slide có bố cục phức tạp.
-  * Cân nhắc tiền xử lý: convert sang grayscale, tăng contrast để tăng độ chính xác OCR.
-
----
-
-### 3. Dùng Gemini (hoặc GPT) để format lại
-
-* Bạn có thể gọi OpenAI API để “làm đẹp” văn bản:
-
-  ```python
-  import openai
-  openai.api_key = "…"
-
-  def beautify(text):
-      prompt = f"Đây là nội dung OCR từ slide:\n\n{text}\n\nHãy sắp xếp lại thành các mục rõ ràng, giữ nguyên ý chính."
-      res = openai.ChatCompletion.create(
-          model="gpt-4o-mini",
-          messages=[{"role":"user","content":prompt}],
-      )
-      return res.choices[0].message.content
-  ```
-* Toàn bộ workflow:
-
-  1. Duyệt slide → chụp ảnh
-  2. Gọi Vision API → nhận `raw_text`
-  3. Gọi Gemini/GPT → nhận `formatted_text`
-  4. Lưu ảnh + `formatted_text` song song
-
----
-
-### 4. Phương án thay thế (không dùng OCR)
-
-* **Google Slides API**:
-
-  * Nếu bạn có quyền xem, API cho phép xuất toàn bộ text, hình ảnh, notes, thậm chí layout JSON.
-  * Không bị giới hạn “block download” trên giao diện web.
-  * Giảm sai sót so với OCR.
-
----
-
-### 5. Lưu ý & Best Practices
-
-* **Đăng nhập an toàn**: tránh lưu credential lộ liễu. Dùng Service Account hoặc OAuth với scope chỉ “read-only”.
-* **Parallel Processing**: nếu nhiều slide, bạn có thể xử lý song song với multiprocessing.
-* **Kiểm soát lỗi**: retry khi Vision API gặp lỗi kết nối, log file slide nào thất bại.
-
----
-
-**English**
-
-Your plan is fundamentally sound, but here are some optimizations and simplifications:
-
----
-
-### 1. Capturing Slides with Python
-
-* **Selenium / Playwright**
-
-  * Use headless Chrome, authenticate via cookies or OAuth.
-  * Navigate slide URLs (e.g., `https://docs.google.com/presentation/d/SLIDE_ID/edit#slide=id.p3`), wait for DOM.
-  * Screenshot the slide container element (e.g., `.punch-viewer-content`):
-
-    ```python
-    from selenium import webdriver
-    driver = webdriver.Chrome(options=...)
-    driver.get(slide_url)
-    el = driver.find_element_by_css_selector('.punch-viewer-content')
-    el.screenshot(f"slide_{i}.png")
-    ```
-  * Advantage: capture only the slide area, avoiding UI chrome.
-
-* **Puppeteer (via pyppeteer)**
-
-  * Similarly, control viewport and zoom for optimal resolution.
-
----
-
-### 2. OCR with Google Cloud Vision API
-
-* Install library:
-
-  ```bash
-  pip install google-cloud-vision
-  ```
-* Example code:
-
-  ```python
-  from google.cloud import vision
-  client = vision.ImageAnnotatorClient()
-
-  def ocr_image(path):
-      with open(path, "rb") as f:
-          img = vision.Image(content=f.read())
-      resp = client.text_detection(image=img)
-      return resp.text_annotations[0].description if resp.text_annotations else ""
-  ```
-* Notes:
-
-  * Use **DOCUMENT\_TEXT\_DETECTION** for complex layouts.
-  * Preprocess images (grayscale, contrast) to boost accuracy.
-
----
-
-### 3. Formatting via Gemini (or GPT)
-
-* Call OpenAI API to “beautify” text:
-
-  ```python
-  import openai
-  openai.api_key = "…"
-
-  def beautify(text):
-      prompt = f"Here is OCR text from a slide:\n\n{text}\n\nPlease organize it into clear bullet points, preserving the original meaning."
-      res = openai.ChatCompletion.create(
-          model="gpt-4o-mini",
-          messages=[{"role":"user","content":prompt}],
-      )
-      return res.choices[0].message.content
-  ```
-* Full workflow:
-
-  1. Iterate slides → screenshot
-  2. Vision API → `raw_text`
-  3. Gemini/GPT → `formatted_text`
-  4. Save image + `formatted_text` in parallel
-
----
-
-### 4. Alternative Without OCR
-
-* **Google Slides API**
-
-  * If you have view access, the API can return all text, images, speaker notes, and layout in JSON.
-  * Bypasses web “download” restrictions.
-  * Less error‑prone than OCR.
-
----
-
-### 5. Practical Tips & Best Practices
-
-* **Secure Authentication**: use Service Accounts or OAuth with `slides.readonly` scope.
-* **Parallelization**: process multiple slides concurrently.
-* **Error Handling**: implement retries on Vision API failures, log any slide that fails OCR.
+MIT License - see LICENSE file for details. 
