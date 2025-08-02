@@ -1,251 +1,145 @@
-# Google Slides Crawler
+# Google Slides Crawler - Sử dụng Gemini 1.5 Pro
 
-A Python tool to automatically capture Google Slides presentations, extract text using OCR, and format content with AI assistance using Google's Gemini 1.5.
+Công cụ tự động hóa việc trích xuất và định dạng nội dung từ các bài thuyết trình trên Google Slides bằng sức mạnh của AI. Biến những slide tĩnh thành tài liệu văn bản có cấu trúc, dễ đọc và dễ dàng lưu trữ.
 
-## English Version
+## Tổng quan
 
-### Overview
+Dự án này giải quyết vấn đề chuyển đổi thủ công nội dung từ Google Slides sang văn bản. Thay vì phải copy-paste từng slide, công cụ này sẽ tự động:
 
-This project provides an automated solution to capture Google Slides presentations, extract text content using Google Cloud Vision API, and format the results using Google's Gemini 1.5 AI. It's particularly useful for creating documentation from presentations or analyzing slide content programmatically.
+1.  **Chụp ảnh** từng slide trong bài thuyết trình.
+2.  **Sử dụng OCR** (Nhận dạng ký tự quang học) để "đọc" và trích xuất văn bản từ các ảnh đó.
+3.  **Tận dụng Gemini 1.5 Pro** để làm sạch, định dạng và cấu trúc lại văn bản một cách thông minh.
 
-### Features
+## Luồng hoạt động
 
-- **Automated Slide Capture**: Uses Selenium WebDriver to navigate and capture slides
-- **OCR Text Extraction**: Integrates Google Cloud Vision API for accurate text recognition
-- **AI-Powered Formatting**: Uses Google Gemini 1.5 to clean and structure extracted text
-- **Speaker Notes Support**: Captures both slide content and presenter notes
-- **Batch Processing**: Handles entire presentations with configurable delays
-- **Multiple Output Formats**: Generates screenshots, OCR text, and formatted content
+```
+URL Google Slides
+      |
+      v
+[Selenium] -> Chụp ảnh màn hình từng slide (.png)
+      |
+      v
+[Google Cloud Vision] -> Trích xuất văn bản thô từ ảnh
+      |
+      v
+[Gemini 1.5 Pro] -> Định dạng, làm sạch, cấu trúc lại văn bản
+      |
+      v
+[File Kết quả] -> Lưu ảnh và văn bản đã định dạng (.txt)
+```
 
-### Prerequisites
+## Tính năng chính
 
-- Python 3.8+
-- Google Chrome browser
-- Google Cloud Vision API credentials
-- Google Gemini API key (for text formatting)
+-   **Tự động hóa hoàn toàn**: Chỉ cần cung cấp URL và tổng số slide.
+-   **Trích xuất chính xác**: Sử dụng Google Cloud Vision, một trong những công nghệ OCR hàng đầu.
+-   **Định dạng thông minh**: Tích hợp Gemini 1.5 Pro để hiểu và tái cấu trúc nội dung một cách tự nhiên.
+-   **Xử lý hàng loạt**: Có khả năng xử lý toàn bộ bài thuyết trình một cách tuần tự.
+-   **Kết quả có tổ chức**: Lưu trữ riêng biệt ảnh và văn bản cho từng slide trong một thư mục duy nhất.
 
-### Installation
+## Yêu cầu hệ thống
 
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd crawl-google-slide
-   ```
+Trước khi bắt đầu, bạn cần chuẩn bị:
 
-2. **Create and activate virtual environment**
-   ```bash
-   # Windows
-   python -m venv venv
-   venv\Scripts\activate
-   
-   # macOS/Linux
-   python3 -m venv venv
-   source venv/bin/activate
-   ```
+1.  **Python 3.8+**
+2.  **Trình duyệt Google Chrome** được cài đặt trên máy.
+3.  **Tài khoản Google Cloud Platform**:
+    - Đã kích hoạt **Vision API**.
+    - Đã tạo một **Service Account** và tải về file **credentials JSON**.
+4.  **Khóa API của Google Gemini**: Lấy từ [Google AI Studio](https://aistudio.google.com/app/apikey).
 
-3. **Install dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
+## Hướng dẫn Cài đặt & Sử dụng
 
-4. **Set up Google Cloud Vision API**
-   - Create a Google Cloud project
-   - Enable the Vision API
-   - Create a service account and download credentials JSON
-   - Set environment variable:
-     ```bash
-     # Windows
-     set GOOGLE_APPLICATION_CREDENTIALS=path\to\credentials.json
-     
-     # macOS/Linux
-     export GOOGLE_APPLICATION_CREDENTIALS=path/to/credentials.json
-     ```
+### Bước 1: Chuẩn bị Dự án
 
-5. **Configure Gemini API**
-   - Get a Gemini API key from https://makersuite.google.com/app/apikey
-   - The API key is already configured in the project: `AIzaSyBYEKKI0v-5WvixUA4BY9EPLeOul92FYcQ`
+1.  **Clone repository này về máy:**
+    ```bash
+    git clone <URL-repository-cua-ban>
+    cd <ten-thu-muc-repository>
+    ```
 
-### Usage
+2.  **Tạo và kích hoạt môi trường ảo (khuyến khích):**
+    ```bash
+    # Windows
+    python -m venv venv
+    .\venv\Scripts\activate
 
-1. **Basic Usage**
-   ```python
-   from main import GoogleSlidesCapture
-   
-   # Initialize capturer
-   capturer = GoogleSlidesCapture(headless=False)
-   
-   # Process a single slide
-   result = capturer.process_slide(
-       "https://docs.google.com/presentation/d/YOUR_ID/edit",
-       1
-   )
-   
-   # Process entire presentation
-   results = capturer.process_presentation(
-       "https://docs.google.com/presentation/d/YOUR_ID/edit",
-       total_slides=10
-   )
-   
-   capturer.close()
-   ```
+    # macOS / Linux
+    python3 -m venv venv
+    source venv/bin/activate
+    ```
 
-2. **Command Line Usage**
-   ```bash
-   python main.py
-   ```
+3.  **Cài đặt các thư viện cần thiết:**
+    ```bash
+    pip install -r requirements.txt
+    ```
 
-### Configuration
+### Bước 2: Cấu hình API
 
-- **Headless Mode**: Set `headless=True` for background processing
-- **Delay Between Slides**: Adjust `SLIDE_DELAY` in config.py to avoid rate limiting
-- **Output Directory**: Screenshots and text files are saved in the current directory
-- **AI Formatting**: Customize the prompt in `config.py` AI_PROMPTS section
+1.  **Google Cloud Vision API:**
+    - Đặt biến môi trường hệ thống để trỏ đến file JSON của bạn. Đây là cách an toàn nhất.
+    - **Windows (Command Prompt):**
+      ```cmd
+      set GOOGLE_APPLICATION_CREDENTIALS="C:\duong\dan\den\file-credentials.json"
+      ```
+    - **macOS / Linux:**
+      ```bash
+      export GOOGLE_APPLICATION_CREDENTIALS="/duong/dan/den/file-credentials.json"
+      ```
+    - **Lưu ý:** Bạn cần chạy lệnh này trong mỗi phiên terminal mới, hoặc thêm nó vào file cấu hình shell của bạn (`.bashrc`, `.zshrc`, ...).
 
-### Output Files
+2.  **Google Gemini API:**
+    - Bạn sẽ nhập khóa API trực tiếp khi chạy chương trình.
 
-For each slide, the tool generates:
-- `slide_{number}_with_notes.png`: Full screenshot
-- `slide_{number}_content.png`: Slide content only
-- `slide_{number}_notes.png`: Speaker notes only
-- `slide_{number}_formatted.txt`: AI-formatted text content
+### Bước 3: Chạy chương trình
 
-### Error Handling
+1.  Mở terminal trong thư mục gốc của dự án.
+2.  Chạy lệnh sau:
+    ```bash
+    python main.py
+    ```
+3.  Chương trình sẽ yêu cầu bạn nhập các thông tin sau:
+    - **URL của Google Slides**.
+    - **Khóa API Gemini** (sẽ được ẩn khi bạn gõ).
+    - **Tổng số slide** của bài thuyết trình.
 
-- Automatic retry for failed OCR operations
-- Graceful handling of missing speaker notes
-- Logging of processing errors
-- Fallback to basic text extraction if AI formatting fails
+### Bước 4: Xem kết quả
 
-### Security Notes
-
-- Never commit API keys to version control
-- Use environment variables for sensitive credentials
-- Consider using OAuth for user-specific access
-- Implement proper session management for production use
-
----
-
-## Vietnamese Version
-
-### Tổng quan
-
-Dự án này cung cấp giải pháp tự động để chụp các bài thuyết trình Google Slides, trích xuất nội dung văn bản bằng Google Cloud Vision API và định dạng kết quả bằng Google Gemini 1.5 AI. Đặc biệt hữu ích cho việc tạo tài liệu từ bài thuyết trình hoặc phân tích nội dung slide một cách lập trình.
-
-### Tính năng
-
-- **Chụp Slide Tự động**: Sử dụng Selenium WebDriver để điều hướng và chụp slide
-- **Trích xuất văn bản OCR**: Tích hợp Google Cloud Vision API để nhận dạng văn bản chính xác
-- **Định dạng bằng AI**: Sử dụng Google Gemini 1.5 để làm sạch và cấu trúc văn bản trích xuất
-- **Hỗ trợ Ghi chú**: Chụp cả nội dung slide và ghi chú của người thuyết trình
-- **Xử lý hàng loạt**: Xử lý toàn bộ bài thuyết trình với độ trễ có thể cấu hình
-- **Nhiều định dạng đầu ra**: Tạo ra ảnh chụp màn hình, văn bản OCR và nội dung đã định dạng
-
-### Yêu cầu hệ thống
-
-- Python 3.8+
-- Trình duyệt Google Chrome
-- Thông tin xác thực Google Cloud Vision API
-- Khóa API Google Gemini (để định dạng văn bản)
-
-### Cài đặt
-
-1. **Clone repository**
-   ```bash
-   git clone <repository-url>
-   cd crawl-google-slide
-   ```
-
-2. **Tạo và kích hoạt môi trường ảo**
-   ```bash
-   # Windows
-   python -m venv venv
-   venv\Scripts\activate
-   
-   # macOS/Linux
-   python3 -m venv venv
-   source venv/bin/activate
-   ```
-
-3. **Cài đặt dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. **Thiết lập Google Cloud Vision API**
-   - Tạo dự án Google Cloud
-   - Bật Vision API
-   - Tạo service account và tải xuống file credentials JSON
-   - Thiết lập biến môi trường:
-     ```bash
-     # Windows
-     set GOOGLE_APPLICATION_CREDENTIALS=path\to\credentials.json
-     
-     # macOS/Linux
-     export GOOGLE_APPLICATION_CREDENTIALS=path/to/credentials.json
-     ```
-
-5. **Cấu hình Gemini API**
-   - Lấy khóa API Gemini từ https://makersuite.google.com/app/apikey
-   - Khóa API đã được cấu hình sẵn trong dự án: `AIzaSyBYEKKI0v-5WvixUA4BY9EPLeOul92FYcQ`
-
-### Cách sử dụng
-
-1. **Sử dụng cơ bản**
-   ```python
-   from main import GoogleSlidesCapture
-   
-   # Khởi tạo capturer
-   capturer = GoogleSlidesCapture(headless=False)
-   
-   # Xử lý một slide
-   result = capturer.process_slide(
-       "https://docs.google.com/presentation/d/YOUR_ID/edit",
-       1
-   )
-   
-   # Xử lý toàn bộ bài thuyết trình
-   results = capturer.process_presentation(
-       "https://docs.google.com/presentation/d/YOUR_ID/edit",
-       total_slides=10
-   )
-   
-   capturer.close()
-   ```
-
-2. **Sử dụng Command Line**
-   ```bash
-   python main.py
-   ```
-
-### Cấu hình
-
-- **Chế độ Headless**: Đặt `headless=True` để xử lý nền
-- **Độ trễ giữa các slide**: Điều chỉnh `SLIDE_DELAY` trong config.py để tránh bị giới hạn tốc độ
-- **Thư mục đầu ra**: Ảnh chụp màn hình và file văn bản được lưu trong thư mục hiện tại
-- **Định dạng AI**: Tùy chỉnh prompt trong phần AI_PROMPTS của config.py
-
-### File đầu ra
-
-Cho mỗi slide, công cụ tạo ra:
-- `slide_{number}_with_notes.png`: Ảnh chụp màn hình đầy đủ
-- `slide_{number}_content.png`: Chỉ nội dung slide
-- `slide_{number}_notes.png`: Chỉ ghi chú
-- `slide_{number}_formatted.txt`: Nội dung văn bản đã định dạng bằng AI
-
-### Xử lý lỗi
-
-- Tự động thử lại cho các thao tác OCR thất bại
-- Xử lý nhẹ nhàng khi thiếu ghi chú
-- Ghi log các lỗi xử lý
-- Fallback về trích xuất văn bản cơ bản nếu định dạng AI thất bại
-
-### Lưu ý bảo mật
-
-- Không bao giờ commit khóa API vào version control
-- Sử dụng biến môi trường cho các thông tin xác thực nhạy cảm
-- Cân nhắc sử dụng OAuth cho quyền truy cập người dùng cụ thể
-- Triển khai quản lý phiên phù hợp cho sử dụng production
+-   Sau khi chương trình chạy xong, một thư mục có tên `slides_output` sẽ được tạo ra.
+-   Bên trong thư mục này, bạn sẽ thấy các file kết quả được đặt tên theo quy tắc:
+    - `slide_1.png`: Ảnh chụp màn hình của slide 1.
+    - `slide_1_formatted.txt`: Nội dung văn bản của slide 1 đã được Gemini định dạng.
+    - `slide_2.png`
+    - `slide_2_formatted.txt`
+    - ...
 
 ## License
 
-MIT License - see LICENSE file for details. 
+Dự án này được cấp phép theo Giấy phép MIT. Xem file `LICENSE` để biết thêm chi tiết.
+
+
+
+
+------
+
+
+Hướng dẫn sử dụng (Rất quan trọng)
+Hãy làm theo đúng 2 bước sau:
+Bước 1: Chạy lần đầu để Đăng nhập
+Đảm bảo biến DEBUG_MODE ở đầu file được đặt là True.
+Generated python
+DEBUG_MODE = True
+Use code with caution.
+Python
+Chạy chương trình: python main.py.
+Một cửa sổ trình duyệt Chrome mới và trống trơn sẽ hiện ra. Chương trình sẽ điều hướng đến URL slide và bạn sẽ thấy trang yêu cầu đăng nhập của Google.
+Hãy đăng nhập vào tài khoản Google của bạn ngay trên cửa sổ Chrome này.
+Sau khi đăng nhập thành công và thấy được nội dung slide, bạn có thể để chương trình chạy hết hoặc dừng nó lại bằng cách nhấn Ctrl + C trong cửa sổ terminal.
+Lúc này, một thư mục mới tên là chrome_profile_for_bot đã được tạo ra, chứa thông tin đăng nhập của bạn.
+Bước 2: Chạy các lần sau một cách bình thường
+Bây giờ, bạn có thể sửa lại biến DEBUG_MODE thành False để chương trình chạy ẩn, không hiện cửa sổ trình duyệt nữa.
+Generated python
+DEBUG_MODE = False
+Use code with caution.
+Python
+Chạy lại chương trình python main.py.
+Lần này, chương trình sẽ tự động sử dụng profile đã đăng nhập ở Bước 1 và sẽ chạy một cách mượt mà mà không gặp lỗi SessionNotCreatedException nữa.

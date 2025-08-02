@@ -1,233 +1,92 @@
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.chrome.options import Options
+import pyautogui
 import time
 import os
-from google.cloud import vision
-import google.generativeai as genai
-import config
 
-class GoogleSlidesCapture:
-    def __init__(self, headless=True):
-        self.setup_driver(headless)
-        self.vision_client = vision.ImageAnnotatorClient()
-        self.setup_gemini()
-        
-    def setup_gemini(self):
-        """Thiết lập Gemini API"""
-        try:
-            genai.configure(api_key=config.GEMINI_API_KEY)
-            self.gemini_model = genai.GenerativeModel(config.GEMINI_MODEL)
-            print("✅ Gemini API configured successfully")
-        except Exception as e:
-            print(f"⚠️  Failed to configure Gemini API: {e}")
-            self.gemini_model = None
-        
-    def setup_driver(self, headless=True):
-        """Thiết lập Chrome driver"""
-        chrome_options = Options()
-        if headless:
-            chrome_options.add_argument('--headless')
-        chrome_options.add_argument('--window-size=1920,1080')
-        chrome_options.add_argument('--disable-gpu')
-        chrome_options.add_argument('--no-sandbox')
-        chrome_options.add_argument('--disable-dev-shm-usage')
-        
-        self.driver = webdriver.Chrome(options=chrome_options)
-        self.wait = WebDriverWait(self.driver, 10)
-        
-    def login_google(self, email, password):
-        """Đăng nhập Google (hoặc load cookies đã save)"""
-        # Thực hiện login hoặc load cookies
-        pass
+def capture_slides(num_slides, output_dir, delay_between_slides):
+    """
+    Hàm chính để chụp ảnh màn hình trong một vùng cụ thể và chuyển slide.
+    """
+    print("\n==============================================")
+    print("           BẮT ĐẦU CHỤP SLIDES             ")
+    print("==============================================")
     
-    def get_slide_with_notes(self, slide_url, slide_number):
-        """Chụp slide kèm notes như trong ảnh của bạn"""
-        try:
-            # Navigate to slide URL
-            self.driver.get(slide_url)
-            
-            # Đợi slide load
-            time.sleep(3)
-            
-            # Tìm và click vào presenter view hoặc notes view
-            # URL format để show notes: thêm '/present' hoặc modify URL
-            notes_url = slide_url.replace('/edit', '/present')
-            self.driver.get(notes_url)
-            
-            # Đợi load xong
-            time.sleep(2)
-            
-            # Cách 1: Chụp toàn bộ màn hình presenter view
-            screenshot_path = f"slide_{slide_number}_with_notes.png"
-            self.driver.save_screenshot(screenshot_path)
-            
-            # Cách 2: Chụp riêng slide content + notes area
-            # Tìm container chứa cả slide và notes
-            try:
-                # Selector có thể thay đổi tùy Google cập nhật
-                slide_container = self.wait.until(
-                    EC.presence_of_element_located((By.CSS_SELECTOR, 
-                        ".punch-present-slide-container, .punch-viewer-content"))
-                )
-                
-                notes_container = self.driver.find_element(By.CSS_SELECTOR, 
-                    ".punch-present-notes-container, .speaker-notes-container")
-                
-                # Screenshot riêng slide
-                slide_path = f"slide_{slide_number}_content.png"
-                slide_container.screenshot(slide_path)
-                
-                # Screenshot riêng notes
-                notes_path = f"slide_{slide_number}_notes.png"
-                notes_container.screenshot(notes_path)
-                
-                return {
-                    'full_screenshot': screenshot_path,
-                    'slide_only': slide_path,
-                    'notes_only': notes_path
-                }
-                
-            except Exception as e:
-                print(f"Không tìm thấy notes container: {e}")
-                # Fallback: chỉ chụp slide
-                slide_container = self.driver.find_element(By.CSS_SELECTOR, 
-                    ".punch-viewer-content")
-                slide_path = f"slide_{slide_number}_content.png"
-                slide_container.screenshot(slide_path)
-                
-                return {
-                    'full_screenshot': screenshot_path,
-                    'slide_only': slide_path,
-                    'notes_only': None
-                }
-                
-        except Exception as e:
-            print(f"Lỗi khi chụp slide {slide_number}: {e}")
-            return None
-    
-    def ocr_image(self, image_path):
-        """OCR ảnh thành text"""
-        try:
-            with open(image_path, "rb") as f:
-                content = f.read()
-            
-            image = vision.Image(content=content)
-            response = self.vision_client.document_text_detection(image=image)
-            
-            if response.text_annotations:
-                return response.text_annotations[0].description
-            return ""
-            
-        except Exception as e:
-            print(f"Lỗi OCR: {e}")
-            return ""
-    
-    def format_text_with_ai(self, slide_text, notes_text=""):
-        """Dùng Gemini để format lại text"""
-        if not self.gemini_model:
-            return f"SLIDE CONTENT:\n{slide_text}\n\nNOTES:\n{notes_text}"
-        
-        prompt = config.AI_PROMPTS['format_slide'].format(
-            slide_text=slide_text,
-            notes_text=notes_text
-        )
-        
-        try:
-            response = self.gemini_model.generate_content(prompt)
-            
-            if response.text:
-                return response.text
-            else:
-                print("⚠️  Gemini returned empty response")
-                return f"SLIDE CONTENT:\n{slide_text}\n\nNOTES:\n{notes_text}"
-                
-        except Exception as e:
-            print(f"Lỗi Gemini formatting: {e}")
-            return f"SLIDE CONTENT:\n{slide_text}\n\nNOTES:\n{notes_text}"
-    
-    def process_slide(self, slide_url, slide_number):
-        """Xử lý một slide hoàn chỉnh"""
-        print(f"Xử lý slide {slide_number}...")
-        
-        # 1. Chụp ảnh
-        screenshots = self.get_slide_with_notes(slide_url, slide_number)
-        if not screenshots:
-            return None
-        
-        # 2. OCR
-        slide_text = ""
-        notes_text = ""
-        
-        if screenshots['slide_only']:
-            slide_text = self.ocr_image(screenshots['slide_only'])
-        
-        if screenshots['notes_only']:
-            notes_text = self.ocr_image(screenshots['notes_only'])
-        
-        # 3. Format với AI
-        if config.ENABLE_AI_FORMATTING:
-            formatted_text = self.format_text_with_ai(slide_text, notes_text)
-        else:
-            formatted_text = f"SLIDE CONTENT:\n{slide_text}\n\nNOTES:\n{notes_text}"
-        
-        # 4. Lưu kết quả
-        output_file = f"slide_{slide_number}_formatted.txt"
-        with open(output_file, 'w', encoding='utf-8') as f:
-            f.write(formatted_text)
-        
-        return {
-            'slide_number': slide_number,
-            'screenshots': screenshots,
-            'formatted_text': formatted_text,
-            'output_file': output_file
-        }
-    
-    def process_presentation(self, base_url, total_slides):
-        """Xử lý toàn bộ presentation"""
-        results = []
-        
-        for i in range(1, total_slides + 1):
-            # Tạo URL cho từng slide
-            slide_url = f"{base_url}#slide=id.p{i}"
-            
-            result = self.process_slide(slide_url, i)
-            if result:
-                results.append(result)
-            
-            # Nghỉ giữa các slide để tránh bị block
-            time.sleep(config.SLIDE_DELAY)
-        
-        return results
-    
-    def close(self):
-        """Đóng driver"""
-        self.driver.quit()
+    # Lấy kích thước màn hình MỘT LẦN DUY NHẤT
+    screen_width, screen_height = pyautogui.size()
+    print(f"-> Màn hình có kích thước: {screen_width}x{screen_height} pixels")
 
-# Cách sử dụng
-if __name__ == "__main__":
-    # Khởi tạo
-    capturer = GoogleSlidesCapture(headless=False)  # Set False để xem trình duyệt
+    # --- THAY ĐỔI QUAN TRỌNG: TÍNH TOÁN VÙNG CHỤP THEO YÊU CẦU ---
+    # Tính toán điểm bắt đầu (thụt vào 20% từ trên và trái)
+    left_start = int(screen_width * 0.12)
+    top_start = int(screen_height * 0.20)
     
+    # Tính toán chiều rộng và chiều cao của vùng chụp (phần còn lại, tức 80%)
+    capture_width = screen_width - left_start
+    capture_height = screen_height - top_start
+    
+    # Tạo ra vùng chụp theo định dạng (left, top, width, height)
+    capture_region = (left_start, top_start, capture_width, capture_height)
+    
+    print(f"-> Vùng chụp đã được xác định: bắt đầu tại ({left_start}, {top_start}) với kích thước {capture_width}x{capture_height}")
+    
+    for i in range(1, num_slides + 1):
+        # Tạo tên file cho ảnh chụp màn hình
+        filename = os.path.join(output_dir, f"slide_{i}.png")
+        
+        # Chụp vùng màn hình đã xác định
+        screenshot = pyautogui.screenshot(region=capture_region)
+        screenshot.save(filename)
+        
+        print(f"-> Đã chụp và lưu slide {i} tại: {filename}")
+        
+        # Nếu đây chưa phải slide cuối, nhấn phím mũi tên xuống để chuyển slide
+        if i < num_slides:
+            print(f"   Chuyển sang slide tiếp theo...")
+            pyautogui.press('down')
+            # Chờ một chút để slide mới tải xong và các hiệu ứng hoàn tất
+            time.sleep(delay_between_slides)
+
+def main():
+    """Hàm điều phối toàn bộ quy trình."""
+    print("==============================================")
+    print("  CHƯƠNG TRÌNH CHỤP SLIDE - GIẢ LẬP BÀN PHÍM  ")
+    print("==============================================")
+    
+    # --- HƯỚNG DẪN SỬ DỤNG ---
+    print("\n*** VUI LÒNG THỰC HIỆN CÁC BƯỚC SAU: ***")
+    print("1. Mở trình duyệt Chrome của bạn.")
+    print("2. Truy cập vào đúng bài Google Slides cần chụp.")
+    print("3. Nhấn phím F11 để vào chế độ TOÀN MÀN HÌNH (quan trọng!).")
+    print("4. Click chuột vào slide ĐẦU TIÊN của bài thuyết trình.")
+    print("5. Quay lại cửa sổ này để nhập thông tin bên dưới.")
+    print("-" * 30)
+
+    # Nhận thông tin từ người dùng
     try:
-        # Login (nếu cần)
-        # capturer.login_google("email", "password")
-        
-        # URL presentation (thay bằng URL thực tế)
-        presentation_url = "https://docs.google.com/presentation/d/YOUR_PRESENTATION_ID/edit"
-        
-        # Xử lý toàn bộ presentation
-        results = capturer.process_presentation(presentation_url, total_slides=10)
-        
-        print(f"Đã xử lý {len(results)} slides")
-        
-        # In kết quả
-        for result in results:
-            print(f"\nSlide {result['slide_number']}:")
-            print(f"- Screenshots: {result['screenshots']}")
-            print(f"- Output file: {result['output_file']}")
-        
-    finally:
-        capturer.close()
+        total_slides = int(input("(*) Vui lòng nhập TỔNG SỐ SLIDE cần chụp: "))
+        delay = float(input("(*) Nhập độ trễ giữa các slide (giây, vd: 2): "))
+    except ValueError:
+        print("\n[Lỗi] Vui lòng nhập một con số hợp lệ.")
+        return
+
+    # Tạo thư mục lưu trữ nếu chưa có
+    output_dir = "screenshots_output"
+    os.makedirs(output_dir, exist_ok=True)
+    print(f"\n-> Ảnh sẽ được lưu trong thư mục: '{output_dir}'")
+
+    # Đếm ngược 5 giây để người dùng có thời gian chuyển về cửa sổ Chrome
+    print("\n!!! CHUẨN BỊ! HÃY CLICK LẠI VÀO CỬA SỔ CHROME NGAY BÂY GIỜ !!!")
+    for i in range(5, 0, -1):
+        # In đè lên cùng một dòng
+        print(f"Bắt đầu sau {i} giây... ", end='\r')
+        time.sleep(1)
+    
+    # Bắt đầu công việc
+    capture_slides(total_slides, output_dir, delay)
+
+    print("\n==============================================")
+    print("                 HOÀN TẤT!                  ")
+    print(f"Toàn bộ {total_slides} ảnh đã được lưu trong thư mục '{output_dir}'.")
+    print("==============================================")
+
+if __name__ == "__main__":
+    main()
