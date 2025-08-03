@@ -1,59 +1,64 @@
-# Hướng dẫn Bảo trì (Maintenance Guide) - Google Slides Crawler
+# Hướng dẫn Bảo trì (Maintenance Guide) - Trợ lý Học tập Trắc nghiệm AI
 
 Tài liệu này cung cấp thông tin kỹ thuật về cấu trúc dự án, các thành phần cốt lõi và hướng dẫn bảo trì, khắc phục sự cố cho lập trình viên.
 
 ## 1. Cấu trúc Dự án
 
 ```
-.
-├── main.py              # File thực thi chính, điều phối toàn bộ luồng hoạt động
+ai_quiz_helper/
+├── main.py              # File thực thi chính, chứa toàn bộ logic
 ├── requirements.txt      # Danh sách các thư viện Python phụ thuộc
-├── README.md            # Hướng dẫn cho người dùng cuối
-└── MAINTAIN.md          # Tài liệu bảo trì này
+├── credentials.json      # File xác thực của Google Cloud (KHÔNG được đưa lên Git)
+├── ket_qua_hoc_tap/      # Thư mục chứa kết quả đầu ra
+│   └── tong_hop_cau_hoi_va_giai_thich.md
+└── venv/                  # Thư mục môi trường ảo Python
 ```
 
 ## 2. Phân tích các Thành phần Cốt lõi (`main.py`)
 
--   **`validate_gemini_api_key(api_key)`**: Kiểm tra tính hợp lệ của khóa API Gemini bằng cách thực hiện một cuộc gọi thử nghiệm nhỏ. Đây là bước quan trọng để cung cấp phản hồi sớm cho người dùng.
--   **`setup_driver()`**: Cấu hình và khởi tạo Selenium WebDriver. Sử dụng `webdriver-manager` để tự động hóa việc quản lý driver và các tùy chọn `headless` để chạy ngầm.
--   **`capture_slide_screenshot(...)`**: **(Cần triển khai)** Logic cốt lõi để điều khiển trình duyệt, điều hướng đến từng slide và chụp ảnh màn hình của phần tử chứa nội dung chính (`.punch-viewer-content`).
--   **`extract_text_from_image_ocr(...)`**: **(Cần triển khai)** Logic để gọi Google Cloud Vision API. Nó nhận đường dẫn ảnh và trả về một chuỗi văn bản thô.
--   **`format_text_with_gemini(...)`**: Gửi văn bản thô từ OCR cùng với một "prompt" (câu lệnh) được thiết kế cẩn thận đến Gemini 1.5 Pro API để nhận lại văn bản đã được định dạng.
--   **`main()`**: Hàm điều phối chính. Chịu trách nhiệm nhận đầu vào từ người dùng, gọi tuần tự các hàm xử lý trong một vòng lặp và quản lý việc lưu file kết quả.
+-   **`play_sound(sound_type)`**: Sử dụng thư viện `winsound` (chỉ trên Windows) để cung cấp phản hồi âm thanh. Được thiết kế để không làm crash chương trình nếu không phải Windows hoặc không phát được âm thanh.
+
+-   **`validate_gemini_api_key(api_key)`**: Gửi một yêu cầu thử nghiệm nhỏ đến Gemini để xác thực khóa API trước khi thực hiện các tác vụ chính, giúp phát hiện lỗi sớm.
+
+-   **`show_image_preview(...)` & `show_split_image_preview(...)`**: Sử dụng `matplotlib` để hiển thị ảnh xem trước một cách đáng tin cậy, khắc phục vấn đề của các trình xem ảnh mặc định. Các hàm này sẽ tạm dừng chương trình cho đến khi cửa sổ xem trước được đóng lại.
+
+-   **`extract_text_from_image_ocr(...)`**: Cầu nối với Google Cloud. Chịu trách nhiệm gửi ảnh đến Vision API và trả về văn bản thô. Yêu cầu file `credentials.json` hợp lệ.
+
+-   **`format_question_and_explanation(...)`**: **Trái tim của ứng dụng**.
+    -   Chứa "prompt" được thiết kế đặc biệt cho việc học tập trắc nghiệm.
+    -   Nhận đầu vào là văn bản câu hỏi và văn bản đáp án.
+    -   Yêu cầu Gemini định dạng câu hỏi (không có đáp án) và viết phần giải thích (có nêu đáp án đúng).
+    -   Đây là nơi quan trọng nhất để tinh chỉnh nếu muốn thay đổi định dạng đầu ra.
+
+-   **`calibrate_main_region(...)` & `calibrate_split_line(...)`**: Cung cấp quy trình tương tác cho người dùng để xác định chính xác các vùng cần chụp ảnh thông qua các vòng lặp `while`, cho phép thử lại đến khi hài lòng.
+
+-   **`capture_and_process(...)`**: Vòng lặp chính xử lý hàng loạt. Với mỗi câu hỏi, nó thực hiện chuỗi hành động: chụp 2 ảnh -> OCR 2 ảnh -> gửi 2 văn bản cho Gemini -> lưu kết quả -> nhấn phím di chuyển.
+
+-   **`main()`**: Hàm điều phối cấp cao nhất, điều khiển luồng chạy của toàn bộ chương trình từ lúc bắt đầu, qua các bước căn chỉnh, đến khi xử lý hàng loạt và kết thúc.
 
 ## 3. Nhiệm vụ Bảo trì
 
-### Hàng tuần / Hàng tháng
-
 1.  **Cập nhật Dependencies:**
-    - Thường xuyên kiểm tra các phiên bản mới của thư viện để nhận các bản vá bảo mật và tính năng mới.
-    - Chạy `pip list --outdated` để xem danh sách.
-    - Chạy `pip install -U -r requirements.txt` để cập nhật.
+    -   Thường xuyên chạy `pip list --outdated` trong môi trường ảo để kiểm tra các phiên bản mới. Cân nhắc cập nhật để có các bản vá lỗi và bảo mật.
 
-2.  **Kiểm tra Selector của Selenium:**
-    - Google có thể thay đổi cấu trúc HTML/CSS của Slides. Selector `.punch-viewer-content` có thể không còn hợp lệ.
-    - Nếu chức năng chụp ảnh bị lỗi, hãy mở Google Slides trong trình duyệt, sử dụng Developer Tools (F12) để kiểm tra và cập nhật lại CSS Selector trong hàm `capture_slide_screenshot`.
+2.  **Giám sát Chi phí API:**
+    -   **Rất quan trọng!** Thường xuyên truy cập bảng điều khiển Google Cloud để theo dõi chi phí sử dụng của **Cloud Vision API**.
+    -   Theo dõi mức sử dụng của **Gemini API** tại [Google AI Studio](https://aistudio.google.com/app/apikey).
 
-### Khi có sự cố
+3.  **Tinh chỉnh Prompt:**
+    -   Nếu chất lượng định dạng hoặc giải thích của Gemini giảm sút hoặc không như ý, nơi đầu tiên cần xem xét và chỉnh sửa là chuỗi `prompt` bên trong hàm `format_question_and_explanation`.
 
-1.  **Giám sát Chi phí API:**
-    - Cả Google Cloud Vision và Gemini API đều tính phí dựa trên lượng sử dụng. Thường xuyên kiểm tra bảng điều khiển thanh toán trên Google Cloud để tránh phát sinh chi phí bất ngờ.
+## 4. Hướng dẫn Khắc phục Sự cố
 
-2.  **Xem lại Prompt của Gemini:**
-    - Hiệu quả của AI phụ thuộc rất lớn vào prompt. Nếu chất lượng đầu ra bị giảm, hãy xem xét việc tinh chỉnh lại prompt trong hàm `format_text_with_gemini` để rõ ràng và cụ thể hơn.
-
-## 4. Hướng dẫn Khắc phục Sự cố (Troubleshooting)
-
-| Vấn đề                                           | Nguyên nhân có thể xảy ra                                                                                             | Giải pháp                                                                                                                                                             |
-| ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Lỗi `webdriver` hoặc trình duyệt không khởi động** | - ChromeDriver không tương thích với phiên bản Chrome hiện tại.<br>- Chrome chưa được cài đặt.                       | - `webdriver-manager` thường tự xử lý việc này. Thử xóa cache của nó.<br>- Chạy `pip install --upgrade webdriver-manager`. <br>- Đảm bảo Google Chrome đã được cài đặt. |
-| **Chụp ảnh màn hình thất bại hoặc ra ảnh trắng**     | - Selector CSS đã thay đổi.<br>- Mạng chậm, slide chưa tải xong khi chụp.<br>- Cần đăng nhập để xem slide.             | - Kiểm tra và cập nhật CSS Selector.<br>- Tăng thời gian chờ trong `WebDriverWait`. <br>- (Nâng cao) Thêm cơ chế nạp cookie để xác thực phiên đăng nhập.         |
-| **Lỗi OCR (trả về văn bản trống hoặc sai)**        | - Ảnh chụp có độ phân giải thấp, bị mờ.<br>- Vision API chưa được bật hoặc credentials không hợp lệ. <br>- Hết quota API. | - Đảm bảo `window-size` đủ lớn.<br>- Kiểm tra lại cấu hình `GOOGLE_APPLICATION_CREDENTIALS`.<br>- Kiểm tra bảng điều khiển Google Cloud.                                 |
-| **Lỗi từ Gemini API (xác thực, quota)**          | - Khóa API không chính xác.<br>- Hết hạn mức miễn phí hoặc quota.                                                      | - Lấy lại khóa API mới từ Google AI Studio.<br>- Kiểm tra trang quản lý API của bạn.                                                                                   |
-| **Bị Google chặn vì truy cập quá nhanh**          | - Gửi quá nhiều yêu cầu trong một thời gian ngắn.                                                                     | - Tăng thời gian `time.sleep()` giữa các lần xử lý slide trong vòng lặp chính.                                                                                         |
+| Vấn đề                                           | Nguyên nhân có thể xảy ra                                                                                                                              | Giải pháp                                                                                                                                                                 |
+| ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Lỗi OCR thất bại / `credentials.json` không hợp lệ** | - File `credentials.json` không tồn tại hoặc sai vị trí.<br>- File JSON không phải của **Service Account**.<br>- API Cloud Vision chưa được bật.<br>- Tài khoản Service Account không có quyền. | - Đảm bảo file `credentials.json` nằm cùng cấp với `main.py`.<br>- Tạo lại và tải về đúng file **Service Account Key** từ Google Cloud Console.<br>- Vào Console để bật API.   |
+| **Lỗi Gemini API**                               | - Khóa API không chính xác.<br>- Hết hạn mức sử dụng (nếu có).                                                                                            | - Kiểm tra lại khóa API bạn đã nhập.<br>- Truy cập Google AI Studio để kiểm tra trạng thái và hạn mức của khóa.                                                                 |
+| **Cửa sổ xem trước không hiển thị**               | - Lỗi cài đặt `matplotlib` hoặc backend đồ họa của nó.                                                                                                    | - Thử chạy lại `pip install --upgrade matplotlib`.<br>- Đảm bảo các thư viện trong `requirements.txt` đã được cài đặt thành công.                                                |
+| **Ảnh chụp bị lệch hoặc sai nội dung**           | - Người dùng di chuyển cửa sổ trình duyệt sau khi căn chỉnh.<br>- Độ phân giải màn hình thay đổi.                                                         | - Chạy lại chương trình để thực hiện lại quy trình căn chỉnh. Đảm bảo cửa sổ trình duyệt giữ nguyên vị trí trong suốt quá trình chạy.                                    |
+| **Không có âm thanh (trên Windows)**              | - Lỗi driver âm thanh của hệ điều hành.                                                                                                                | - Kiểm tra xem các âm thanh hệ thống khác có hoạt động không. Code đã được thiết kế để bỏ qua lỗi này và tiếp tục chạy mà không có âm thanh.                                |
 
 ## 5. Thực hành Bảo mật Tốt nhất
 
--   **Không bao giờ commit khóa API hoặc file credentials lên Git.** Thêm file `credentials.json` và các file cấu hình nhạy cảm khác vào `.gitignore`.
--   **Luôn sử dụng biến môi trường** cho `GOOGLE_APPLICATION_CREDENTIALS` thay vì hardcode đường dẫn trong code.
--   Khi tạo Service Account trên Google Cloud, hãy cấp cho nó quyền tối thiểu cần thiết (ví dụ: chỉ quyền sử dụng Vision API), không cấp quyền quản trị toàn bộ dự án.
+-   **KHÔNG BAO GIỜ** đưa file `credentials.json` hoặc ghi trực tiếp Khóa API Gemini vào trong code rồi đẩy lên các kho lưu trữ công khai như GitHub.
+-   Tạo một file `.gitignore` và thêm `credentials.json`, `venv/`, `ket_qua_hoc_tap/` vào đó để loại trừ chúng khỏi việc commit.

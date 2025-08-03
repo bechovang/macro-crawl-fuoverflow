@@ -1,145 +1,99 @@
-# Google Slides Crawler - Sử dụng Gemini 1.5 Pro
+# Trợ lý Học tập Trắc nghiệm AI
 
-Công cụ tự động hóa việc trích xuất và định dạng nội dung từ các bài thuyết trình trên Google Slides bằng sức mạnh của AI. Biến những slide tĩnh thành tài liệu văn bản có cấu trúc, dễ đọc và dễ dàng lưu trữ.
+Một công cụ mạnh mẽ sử dụng Trí tuệ Nhân tạo (AI) để tự động hóa việc thu thập, định dạng và giải thích các câu hỏi trắc nghiệm từ bất kỳ nguồn nào trên màn hình của bạn.
 
 ## Tổng quan
 
-Dự án này giải quyết vấn đề chuyển đổi thủ công nội dung từ Google Slides sang văn bản. Thay vì phải copy-paste từng slide, công cụ này sẽ tự động:
+Bạn mệt mỏi với việc phải gõ lại hoặc chụp ảnh màn hình từng câu hỏi để ôn tập? Công cụ này sẽ giải quyết vấn đề đó. Nó hoạt động như một trợ lý ảo, "nhìn" vào màn hình của bạn, tự động chụp lại câu hỏi và đáp án, sau đó sử dụng AI để:
 
-1.  **Chụp ảnh** từng slide trong bài thuyết trình.
-2.  **Sử dụng OCR** (Nhận dạng ký tự quang học) để "đọc" và trích xuất văn bản từ các ảnh đó.
-3.  **Tận dụng Gemini 1.5 Pro** để làm sạch, định dạng và cấu trúc lại văn bản một cách thông minh.
-
-## Luồng hoạt động
-
-```
-URL Google Slides
-      |
-      v
-[Selenium] -> Chụp ảnh màn hình từng slide (.png)
-      |
-      v
-[Google Cloud Vision] -> Trích xuất văn bản thô từ ảnh
-      |
-      v
-[Gemini 1.5 Pro] -> Định dạng, làm sạch, cấu trúc lại văn bản
-      |
-      v
-[File Kết quả] -> Lưu ảnh và văn bản đã định dạng (.txt)
-```
+1.  **Nhận dạng văn bản** từ hình ảnh một cách chính xác.
+2.  **Định dạng lại** câu hỏi và các lựa chọn một cách sạch sẽ, rõ ràng.
+3.  **Cung cấp lời giải thích** ngắn gọn cho đáp án đúng.
+4.  **Tổng hợp tất cả** vào một file duy nhất, sẵn sàng cho việc ôn tập.
 
 ## Tính năng chính
 
--   **Tự động hóa hoàn toàn**: Chỉ cần cung cấp URL và tổng số slide.
--   **Trích xuất chính xác**: Sử dụng Google Cloud Vision, một trong những công nghệ OCR hàng đầu.
--   **Định dạng thông minh**: Tích hợp Gemini 1.5 Pro để hiểu và tái cấu trúc nội dung một cách tự nhiên.
--   **Xử lý hàng loạt**: Có khả năng xử lý toàn bộ bài thuyết trình một cách tuần tự.
--   **Kết quả có tổ chức**: Lưu trữ riêng biệt ảnh và văn bản cho từng slide trong một thư mục duy nhất.
+-   **Căn chỉnh Tương tác:** Cho phép bạn tự định nghĩa vùng chụp và đường cắt một cách trực quan trước khi chạy.
+-   **Độ chính xác cao:** Sử dụng Google Cloud Vision, một trong những công nghệ OCR (Nhận dạng ký tự quang học) hàng đầu thế giới.
+-   **Giải thích thông minh:** Tích hợp Gemini 1.5 Pro không chỉ để định dạng mà còn để giải thích đáp án, giúp bạn hiểu sâu hơn.
+-   **Giấu đáp án:** Câu hỏi được trình bày không có đáp án đúng, giúp bạn tự kiểm tra kiến thức. Đáp án và giải thích được đặt ở phần riêng biệt.
+-   **Phản hồi Âm thanh:** Phát ra các tiếng "bíp" để thông báo tiến trình (bắt đầu, hoàn thành một câu, kết thúc toàn bộ), giúp bạn không cần nhìn vào màn hình terminal.
+-   **Tổng hợp tiện lợi:** Tất cả các câu hỏi được gộp vào một file Markdown duy nhất, dễ dàng đọc, tìm kiếm và sao chép.
 
 ## Yêu cầu hệ thống
 
 Trước khi bắt đầu, bạn cần chuẩn bị:
 
 1.  **Python 3.8+**
-2.  **Trình duyệt Google Chrome** được cài đặt trên máy.
-3.  **Tài khoản Google Cloud Platform**:
-    - Đã kích hoạt **Vision API**.
-    - Đã tạo một **Service Account** và tải về file **credentials JSON**.
-4.  **Khóa API của Google Gemini**: Lấy từ [Google AI Studio](https://aistudio.google.com/app/apikey).
+2.  **Tài khoản Google Cloud Platform:**
+    -   Đã kích hoạt thanh toán (có thể sử dụng 300$ miễn phí cho người dùng mới).
+    -   Đã bật **Cloud Vision API**.
+    -   Đã tạo một **Service Account** và tải về file **credentials JSON** của nó.
+3.  **Khóa API của Google Gemini**: Lấy từ [Google AI Studio](https://aistudio.google.com/app/apikey).
 
-## Hướng dẫn Cài đặt & Sử dụng
+## Cài đặt & Thiết lập
 
-### Bước 1: Chuẩn bị Dự án
+### Bước 1: Chuẩn bị Thư mục và Code
 
-1.  **Clone repository này về máy:**
+1.  Tạo một thư mục mới cho dự án, ví dụ `ai_quiz_helper`.
+2.  Sao chép file `main.py` và `requirements.txt` vào thư mục này.
+3.  Sao chép file **`credentials.json`** bạn đã tải từ Google Cloud vào cùng thư mục này.
+
+### Bước 2: Tạo và Kích hoạt Môi trường ảo (Rất khuyến khích)
+
+Sử dụng môi trường ảo giúp các thư viện của dự án này không ảnh hưởng đến các dự án Python khác trên máy của bạn.
+
+1.  Mở Command Prompt hoặc Terminal trong thư mục dự án (`ai_quiz_helper`).
+2.  Chạy lệnh sau để tạo môi trường ảo (tên là `venv`):
     ```bash
-    git clone <URL-repository-cua-ban>
-    cd <ten-thu-muc-repository>
-    ```
-
-2.  **Tạo và kích hoạt môi trường ảo (khuyến khích):**
-    ```bash
-    # Windows
     python -m venv venv
-    .\venv\Scripts\activate
-
-    # macOS / Linux
-    python3 -m venv venv
-    source venv/bin/activate
     ```
+3.  Kích hoạt môi trường ảo:
+    -   **Trên Windows:**
+        ```bash
+        .\venv\Scripts\activate
+        ```
+        *(Sau khi chạy, bạn sẽ thấy `(venv)` ở đầu dòng lệnh của mình)*
 
-3.  **Cài đặt các thư viện cần thiết:**
-    ```bash
-    pip install -r requirements.txt
-    ```
+    -   **Trên macOS/Linux:**
+        ```bash
+        source venv/bin/activate
+        ```
 
-### Bước 2: Cấu hình API
+### Bước 3: Cài đặt các Thư viện cần thiết
 
-1.  **Google Cloud Vision API:**
-    - Đặt biến môi trường hệ thống để trỏ đến file JSON của bạn. Đây là cách an toàn nhất.
-    - **Windows (Command Prompt):**
-      ```cmd
-      set GOOGLE_APPLICATION_CREDENTIALS="C:\duong\dan\den\file-credentials.json"
-      ```
-    - **macOS / Linux:**
-      ```bash
-      export GOOGLE_APPLICATION_CREDENTIALS="/duong/dan/den/file-credentials.json"
-      ```
-    - **Lưu ý:** Bạn cần chạy lệnh này trong mỗi phiên terminal mới, hoặc thêm nó vào file cấu hình shell của bạn (`.bashrc`, `.zshrc`, ...).
+Khi môi trường ảo đã được kích hoạt, hãy chạy lệnh sau. Lệnh này sẽ tự động đọc file `requirements.txt` và cài đặt tất cả các thư viện cần thiết.
 
-2.  **Google Gemini API:**
-    - Bạn sẽ nhập khóa API trực tiếp khi chạy chương trình.
+```bash
+pip install -r requirements.txt
+```
 
-### Bước 3: Chạy chương trình
+## Hướng dẫn sử dụng
 
-1.  Mở terminal trong thư mục gốc của dự án.
-2.  Chạy lệnh sau:
-    ```bash
-    python main.py
-    ```
-3.  Chương trình sẽ yêu cầu bạn nhập các thông tin sau:
-    - **URL của Google Slides**.
-    - **Khóa API Gemini** (sẽ được ẩn khi bạn gõ).
-    - **Tổng số slide** của bài thuyết trình.
+### Bước 1: Chuẩn bị Giao diện
+
+1.  Mở trình duyệt và truy cập vào bài trắc nghiệm của bạn.
+2.  Nhấn phím **F11** để vào chế độ **TOÀN MÀN HÌNH**. Đây là bước cực kỳ quan trọng để đảm bảo ảnh chụp không bị lẫn các yếu tố thừa.
+3.  Di chuyển đến câu hỏi trắc nghiệm đầu tiên.
+
+### Bước 2: Chạy chương trình và Căn chỉnh
+
+1.  Mở terminal trong thư mục dự án (đảm bảo môi trường ảo `venv` đã được kích hoạt).
+2.  Chạy lệnh: `python main.py`
+3.  Chương trình sẽ hướng dẫn bạn qua 2 bước căn chỉnh:
+    -   **Căn chỉnh vùng chụp chính:** Nhập phần trăm thụt lề từ trên và trái. Một cửa sổ xem trước sẽ hiện ra. Hãy xem và đóng nó lại, sau đó nhập `ok` nếu đã vừa ý, hoặc `thử lại` để làm lại.
+    -   **Căn chỉnh đường cắt:** Nhập phần trăm cắt từ dưới lên cho phần đáp án. Hai cửa sổ xem trước (Đề và Đáp án) sẽ hiện ra. Hãy xem và đóng chúng, sau đó xác nhận.
+
+### Bước 3: Nhập thông tin và Bắt đầu
+
+1.  Sau khi căn chỉnh xong, chương trình sẽ yêu cầu bạn nhập các thông tin cuối cùng:
+    -   Tổng số câu hỏi cần lấy.
+    -   Độ trễ giữa mỗi câu (để slide có thời gian tải).
+    -   Khóa API Gemini của bạn.
+2.  Chương trình sẽ bắt đầu đếm ngược 5 giây. **TRONG LÚC NÀY, HÃY NHANH CHÓNG CLICK LẠI VÀO CỬA SỔ TRÌNH DUYỆT ĐANG Ở CHẾ ĐỘ TOÀN MÀN HÌNH.**
 
 ### Bước 4: Xem kết quả
 
--   Sau khi chương trình chạy xong, một thư mục có tên `slides_output` sẽ được tạo ra.
--   Bên trong thư mục này, bạn sẽ thấy các file kết quả được đặt tên theo quy tắc:
-    - `slide_1.png`: Ảnh chụp màn hình của slide 1.
-    - `slide_1_formatted.txt`: Nội dung văn bản của slide 1 đã được Gemini định dạng.
-    - `slide_2.png`
-    - `slide_2_formatted.txt`
-    - ...
-
-## License
-
-Dự án này được cấp phép theo Giấy phép MIT. Xem file `LICENSE` để biết thêm chi tiết.
-
-
-
-
-------
-
-
-Hướng dẫn sử dụng (Rất quan trọng)
-Hãy làm theo đúng 2 bước sau:
-Bước 1: Chạy lần đầu để Đăng nhập
-Đảm bảo biến DEBUG_MODE ở đầu file được đặt là True.
-Generated python
-DEBUG_MODE = True
-Use code with caution.
-Python
-Chạy chương trình: python main.py.
-Một cửa sổ trình duyệt Chrome mới và trống trơn sẽ hiện ra. Chương trình sẽ điều hướng đến URL slide và bạn sẽ thấy trang yêu cầu đăng nhập của Google.
-Hãy đăng nhập vào tài khoản Google của bạn ngay trên cửa sổ Chrome này.
-Sau khi đăng nhập thành công và thấy được nội dung slide, bạn có thể để chương trình chạy hết hoặc dừng nó lại bằng cách nhấn Ctrl + C trong cửa sổ terminal.
-Lúc này, một thư mục mới tên là chrome_profile_for_bot đã được tạo ra, chứa thông tin đăng nhập của bạn.
-Bước 2: Chạy các lần sau một cách bình thường
-Bây giờ, bạn có thể sửa lại biến DEBUG_MODE thành False để chương trình chạy ẩn, không hiện cửa sổ trình duyệt nữa.
-Generated python
-DEBUG_MODE = False
-Use code with caution.
-Python
-Chạy lại chương trình python main.py.
-Lần này, chương trình sẽ tự động sử dụng profile đã đăng nhập ở Bước 1 và sẽ chạy một cách mượt mà mà không gặp lỗi SessionNotCreatedException nữa.
+-   Chương trình sẽ tự động chạy, bạn sẽ nghe thấy âm thanh báo hiệu sau mỗi câu hỏi được xử lý.
+-   Khi hoàn tất, một âm thanh báo hiệu thành công sẽ vang lên.
+-   Toàn bộ kết quả được tổng hợp trong thư mục `ket_qua_hoc_tap` tại file **`tong_hop_cau_hoi_va_giai_thich.md`**.
