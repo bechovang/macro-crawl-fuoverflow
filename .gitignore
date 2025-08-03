@@ -70,3 +70,7 @@ logs/
 # Temporary files
 *.tmp
 *.temp 
+
+ket_qua_hoc_tap/
+screenshots_output/
+slides_output/
