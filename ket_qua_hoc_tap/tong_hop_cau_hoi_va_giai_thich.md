@@ -1,124 +1,162 @@
 # TỔNG HỢP CÁC CÂU HỎI VÀ GIẢI THÍCH
 
-Câu 1: Làm thế nào để khởi tạo một mảng ký tự trong C?
-
-A. char arr] "Hello";
-B. char arr[]=['H', 'e', 'T', 'T', 'o','/e'];
-**(ĐÁP ÁN ĐÚNG)** C. char arr[] = "Hello";
-D. char arr[] = {'H', 'e', 'T', 'I', '0', '0'};
-
-
-**Giải thích:** Trong C, cách khởi tạo mảng ký tự bằng chuỗi ký tự là `char arr[] = "Hello";`.  Ký tự null kết thúc (`\0`) sẽ được tự động thêm vào cuối chuỗi. Các lựa chọn khác có lỗi cú pháp hoặc khởi tạo mảng bằng từng ký tự riêng lẻ.
-
----
-
-Câu 2: How can you initialize a character array in C?
-
-A. `char arr[] = "Hello";` (**ĐÁP ÁN ĐÚNG**)
-B. `char arr[] = ['H', 'e', 'T', 'T', 'o','/e'];`
-C. `Char[] arr = "Hello";`
-
-
-**Giải thích:** Ghi chú đáp án là "A", tương ứng với lựa chọn A.  Đây là cách khởi tạo mảng ký tự bằng chuỗi ký tự trong C. Lựa chọn B sai vì sử dụng dấu ngoặc vuông `[]` thay vì ngoặc nhọn `{}` khi khởi tạo mảng ký tự bằng các ký tự riêng lẻ.  Lựa chọn C sai vì kiểu dữ liệu `char` phải viết thường.
-
----
-
-Câu 3: How can you initialize a character array in C?
-
-A. `char arr[] = "Hello";` (**ĐÁP ÁN ĐÚNG**)
-B. `char arr[] = ['H', 'e', 'T', 'T', 'o','/e'];`
-C. `Char[] arr = "Hello";`
-
-**Giải thích:** Ghi chú "A" cùng với thời gian cho thấy đây là đáp án được chọn. Trong C, cách khởi tạo mảng ký tự bằng chuỗi ký tự như đáp án A là đúng. Đáp án B sai vì sử dụng dấu ngoặc vuông `[]` như khởi tạo mảng các ký tự riêng lẻ, đồng thời chứa ký tự `/e` không hợp lệ. Đáp án C sai về kiểu dữ liệu (phải là `char`, không phải `Char`).
-
----
-
-Câu 4: Which of the following statements is invalid?
-
-A. `printf('\\\');` (**ĐÁP ÁN ĐÚNG**)
-B. `printf("abc");`
-C. `printf("%%");`
-D. `printf("\n");`
-
-
-**Giải thích:**
-
-Ký tự `\` trong chuỗi ký tự được đặt trong dấu nháy đơn `'` phải được escape bằng một ký tự `\` khác.  Đáp án A chỉ có một ký tự `\` sau dấu nháy đơn, dẫn đến lỗi biên dịch.  Để in ra ký tự `\`, cần phải viết `printf('\\');`  trong đó có hai ký tự `\`. Các đáp án khác đều hợp lệ: B in ra chuỗi "abc", C in ra ký tự `%` (bằng cách escape nó với một `%` khác), và D in ra ký tự newline.
-
----
-
-Câu 5: Which of the following is an incorrect iteration construct?
-
-A. (condition)? True Value: False_Value (**ĐÁP ÁN ĐÚNG**)
-B. for (InitBlock; Condition; Task2) Task1;
-C. do{ statements;} while (condition);
-D. while (condition){ statements; }
-
-**Giải thích:** Toán tử ba ngôi (ternary operator) `(condition)? True_Value : False_Value` được dùng để lựa chọn giữa hai giá trị dựa trên một điều kiện, chứ không phải là một cấu trúc lặp. Các lựa chọn B, C và D đều là các cấu trúc lặp hợp lệ (for, do-while, while).
-
----
-
-Câu 6: Cú pháp của toán tử điều kiện trong C là gì?
-
-A. `condition ? expression1 : expression2` (**ĐÁP ÁN ĐÚNG**)
-B. `condition ? expression1, expression2`
-C. `condition expression1 ? expression2`
-D. `expression1 condition ? expression2`
-
-**Giải thích:** Toán tử điều kiện trong C (còn gọi là toán tử ba ngôi) có cú pháp `condition ? expression1 : expression2`.  Nếu `condition` là đúng, `expression1` được đánh giá; ngược lại, `expression2` được đánh giá.  Ghi chú chỉ ra đáp án A là đúng.
-
----
-
-Câu 7: Hàm nào sẽ tính trung bình của hai số thực?
-
-A. `int average( double, double);`
-B. `double average( double, double);` (**ĐÁP ÁN ĐÚNG**)
-C. `char average( double, double);`
-D. `void average( double, double);`
-
-**Giải thích:** Hàm tính trung bình của hai số thực nên trả về một giá trị là số thực. Kiểu dữ liệu `double` đại diện cho số thực trong C/C++.  Đáp án B khai báo hàm `average` trả về kiểu `double`, phù hợp với yêu cầu.
-
----
-
-Câu 8: Cú pháp nào sau đây là đúng của câu lệnh while?
-
-A. `while (condition) { statements; }` (**ĐÁP ÁN ĐÚNG**)
-B. `(condition){ statements ;}`
-C. `while (condition) { statements };`
-D. `{ statements } while (condition);`
-
-**Giải thích:** Đáp án A là cú pháp chính xác của vòng lặp `while` trong hầu hết các ngôn ngữ lập trình giống C (như C++, Java, JavaScript, C#...).  Nó bao gồm từ khóa `while`, theo sau là một điều kiện trong dấu ngoặc đơn.  Nếu điều kiện đúng, các câu lệnh bên trong khối mã `{}` sẽ được thực thi.
-
----
-
-Câu 9: What commands are used to write data appended to the end of the file? (Choose 2 answers)
-
-A. `FILE *f=fwrite("output.txt", "a");`
-B. `FILE *f= fopen("output.txt", "a");` (**ĐÁP ÁN ĐÚNG**)
-C. `FILE *f= fopen("output.txt", "a+");` (**ĐÁP ÁN ĐÚNG**)
-D. `FILE *f= fopen("output.txt", "w+");`
-E. `FILE *f= fopen("output.txt", "w");`
-
-
-**Giải thích:**
-
-Ghi chú đáp án là "BC".  Trong C, hàm `fopen()` được dùng để mở file.  `"a"` là chế độ mở file để ghi tiếp vào cuối file (append). `"a+"` cũng là chế độ append, nhưng cho phép vừa đọc vừa ghi.  Vì câu hỏi yêu cầu chọn 2 đáp án, B và C đều đúng.  `fwrite()` không được dùng để mở file. `"w+"` sẽ ghi đè lên file hiện có, còn `"w"` cũng ghi đè và chỉ cho phép ghi.
-
----
-
-Câu 10:
-
-`int *ptr = malloc(sizeof(int));`
-
-Để cấp phát lại `ptr` thành một mảng 5 phần tử, câu lệnh nào sau đây tạo ra lỗi?
+Câu 1:
+Cho `int *ptr = malloc(sizeof(int));`. Để cấp phát lại `ptr` thành một mảng 5 phần tử, câu lệnh nào sau đây gây ra lỗi?
 
 A. `ptr = realloc(ptr, 5 * sizeof(int));`
 B. `realloc(ptr, 5 * sizeof(int));`
-C. `ptr += malloc(5 * sizeof(int));` (**ĐÁP ÁN ĐÚNG**)
+C. `ptr += malloc(5 * sizeof(int));`
 D. `realloc(ptr, 20);`
 E. `ptr = realloc(ptr, 20);`
 
 
 **Giải thích:**
 
-`realloc` trả về một con trỏ tới vùng nhớ được cấp phát lại.  Câu lệnh B không gán lại giá trị này cho `ptr`, dẫn đến rò rỉ bộ nhớ, nhưng không phải là lỗi. Tương tự, D cũng cấp phát 20 byte (tương đương 5 phần tử int trên nhiều hệ thống), nhưng cũng bị rò rỉ bộ nhớ.  Câu lệnh C cộng một con trỏ tới vùng nhớ mới được cấp phát bởi `malloc` vào con trỏ `ptr` ban đầu. Điều này không hợp lệ và sẽ dẫn đến lỗi, vì `ptr` sẽ trỏ đến một vị trí không xác định trong bộ nhớ.  A và E là cách sử dụng `realloc` đúng.
+Đáp án đúng là C.
+
+`realloc` được sử dụng để thay đổi kích thước khối bộ nhớ được cấp phát động. Phương án A và E đều đúng và an toàn. Phương án B không cập nhật lại con trỏ `ptr` sau khi cấp phát lại, dẫn đến rò rỉ bộ nhớ, nhưng không gây ra lỗi. Phương án D cấp phát 20 byte, tương đương với 5 phần tử `int` trên nhiều hệ thống (trong đó `sizeof(int)` là 4), nên cũng không sai. Phương án C cộng con trỏ `ptr` với giá trị trả về bởi `malloc`, dẫn đến việc `ptr` trỏ đến một vùng nhớ không xác định và gây ra lỗi.
+
+---
+
+Câu 2: What is the correct syntax to output "Hello, World!" in C/C++?
+
+A. `printf("Hello, World!");`
+B. `cout << "Hello, World!" << endl;`
+C. `System.out.println("Hello, World!");`
+D. `echo "Hello, World!";`
+
+
+**Giải thích:**
+
+Đáp án đúng là A.
+
+`printf("Hello, World!");` là cách sử dụng hàm `printf` trong C để in ra màn hình. Ghi chú chỉ ra đáp án là A, tuy không giải thích cụ thể nhưng đây là cú pháp chuẩn trong C. Phương án B đúng trong C++, C sử dụng `printf`. Phương án C đúng trong Java. Phương án D đúng trong các shell script như bash.
+
+---
+
+Câu 3: 31 + 2 = ?
+
+A. 32
+B. 34
+C. 33
+D. 30
+
+**Giải thích:**
+Đáp án đúng là C.
+
+31 + 2 = 33
+
+---
+
+Câu 4: What is the binary representation of 0xA2?
+
+A. 0b01100010
+B. 0b10100010
+C. 0b10010010
+D. 0b10110010
+
+**Giải thích:**
+
+Đáp án đúng là B.
+
+Số hex 0xA2 được chuyển đổi sang nhị phân như sau: A = 10 (trong hệ thập phân) = 1010 (trong hệ nhị phân); 2 = 2 (trong hệ thập phân) = 0010 (trong hệ nhị phân).  Ghép lại ta được 10100010, hay 0b10100010.
+
+---
+
+Câu 5: Hàm `strcmp()` so sánh hai chuỗi ký tự theo từng ký tự. Nếu hai chuỗi bằng nhau, hàm trả về:
+
+A. 1
+B. 0
+C. -1
+
+
+**Giải thích:**
+
+Đáp án đúng là B.
+
+Hàm `strcmp()` trả về 0 nếu hai chuỗi bằng nhau.  Nếu chuỗi thứ nhất lớn hơn chuỗi thứ hai, nó trả về 1. Nếu chuỗi thứ nhất nhỏ hơn chuỗi thứ hai, nó trả về -1.
+
+---
+
+Câu 6: What is the result of the statement `strcmp("abcdef", "abdc")`?
+
+A. 1
+B. 0
+C. -1
+
+
+**Giải thích:**
+
+Đáp án đúng là C.
+
+Hàm `strcmp` so sánh hai chuỗi theo thứ tự từ điển.  Trong trường hợp này, "abcdef" và "abdc" khác nhau ở ký tự thứ tư ('e' và 'd'). Vì 'e' có giá trị ASCII lớn hơn 'd', `strcmp("abcdef", "abdc")` trả về một số nguyên dương. Thông thường các triển khai trả về 1 khi chuỗi thứ nhất lớn hơn chuỗi thứ hai, và dựa trên ghi chú đáp án là C (-1), có thể hệ thống cụ thể này trả về -1 khi chuỗi thứ nhất lớn hơn.  Quan trọng là kết quả sẽ khác 0, biểu thị hai chuỗi không giống nhau.
+
+---
+
+Câu 7: Nếu hai chuỗi có cùng giá trị, thì hàm strcmp() trả về:
+A. True
+B. 1
+C. 0
+D. -1
+
+**Giải thích:**
+Đáp án đúng là C.
+
+Hàm `strcmp()` trong C so sánh hai chuỗi. Nếu hai chuỗi giống hệt nhau, hàm sẽ trả về 0.  Các giá trị khác 0 (như 1 hoặc -1) cho biết chuỗi thứ nhất lớn hơn hoặc nhỏ hơn chuỗi thứ hai theo thứ tự từ điển.
+
+---
+
+Câu 8: Cho hai chuỗi ký tự s1="C" và s2="C and C++", hàm strcmp(s1, s2) sẽ trả về giá trị
+
+A. 0
+B. 1
+C. -1
+D. <0
+E. >0
+
+
+**Giải thích:**
+
+Đáp án đúng là D.
+
+Hàm `strcmp()` so sánh hai chuỗi theo thứ tự từ điển.  Vì `s1` ("C") đứng trước `s2` ("C and C++") trong thứ tự từ điển nên `strcmp(s1, s2)` sẽ trả về một giá trị âm (nhỏ hơn 0).
+
+---
+
+Câu 9:
+
+Cho đoạn mã sau:
+
+```c
+int a[10] = {1, 2, 3};
+```
+
+Giá trị của `a[3]` là gì?
+
+A. 0
+B. 1
+C. 2
+D. 3
+
+
+**Giải thích:**
+
+Đáp án đúng là A.
+
+Khi khởi tạo mảng `int a[10] = {1, 2, 3};`, chỉ ba phần tử đầu tiên được gán giá trị lần lượt là 1, 2 và 3. Các phần tử còn lại từ `a[3]` đến `a[9]` sẽ được tự động khởi tạo bằng 0. Do đó, `a[3]` có giá trị là 0.
+
+---
+
+Câu 10: What is the result of the expression 10 % 3?
+
+A. 1
+B. 3
+C. 2
+D. 0
+
+
+**Giải thích:**
+
+Đáp án đúng là A.
+
+Phép toán `%` là phép toán lấy phần dư của phép chia.  10 chia 3 được 3 dư 1. Vậy 10 % 3 = 1.

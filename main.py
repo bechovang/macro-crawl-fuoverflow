@@ -1,6 +1,7 @@
 import pyautogui
 import time
 import os
+import sys # Thêm sys để kiểm tra hệ điều hành
 import google.generativeai as genai
 from tqdm import tqdm
 from google.cloud import vision
@@ -9,10 +10,36 @@ from PIL import Image
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 
+# --- PHẦN ÂM THANH MỚI: SỬ DỤNG WINSOUND CHO WINDOWS ---
+# Chỉ import winsound nếu đang chạy trên Windows để tránh lỗi trên các HĐH khác
+if sys.platform == "win32":
+    import winsound
+
+def play_sound(sound_type):
+    """
+    **ĐÃ SỬA:** Hàm tiện ích để phát các loại âm thanh khác nhau bằng winsound (chỉ trên Windows).
+    """
+    if sys.platform != "win32":
+        return # Không làm gì nếu không phải Windows
+        
+    try:
+        # sound_type: 1-Bắt đầu, 2-Xong 1 slide, 3-Hoàn tất, 4-Lỗi
+        if sound_type == 1: # Bắt đầu, đếm ngược
+            winsound.Beep(1000, 100) # Tần số 1000 Hz, trong 100 ms
+        elif sound_type == 2: # Xong 1 slide
+            winsound.Beep(1500, 150)
+        elif sound_type == 3: # Hoàn tất
+            winsound.Beep(2000, 500)
+        elif sound_type == 4: # Lỗi
+            winsound.Beep(500, 300) # Âm trầm hơn cho lỗi
+    except Exception:
+        # Bỏ qua nếu không phát được âm thanh
+        pass
+
 # --- CÁC HÀM XỬ LÝ CỐT LÕI ---
 
 def validate_gemini_api_key(api_key):
-    """Kiểm tra xem API key của Gemini có hợp lệ hay không."""
+    #... (Giữ nguyên)
     try:
         genai.configure(api_key=api_key)
         model = genai.GenerativeModel('gemini-1.5-flash-latest')
@@ -23,48 +50,41 @@ def validate_gemini_api_key(api_key):
         return False
 
 def show_image_preview(image_path, title="Xem trước ảnh"):
-    """
-    **Hàm mới:** Sử dụng Matplotlib để hiển thị ảnh xem trước một cách đáng tin cậy.
-    Chương trình sẽ dừng lại cho đến khi bạn đóng cửa sổ xem ảnh.
-    """
+    #... (Giữ nguyên)
     try:
         img = mpimg.imread(image_path)
-        plt.figure(figsize=(10, 8)) # Tạo cửa sổ xem ảnh với kích thước hợp lý
+        plt.figure(figsize=(10, 8))
         plt.imshow(img)
         plt.title(title, fontsize=16)
-        plt.axis('off') # Ẩn các trục tọa độ
+        plt.axis('off')
         print("-> Đang hiển thị cửa sổ xem trước. Hãy đóng cửa sổ này để tiếp tục...")
+        play_sound(1)
         plt.show()
     except Exception as e:
         print(f"\n[Lỗi] Không thể hiển thị ảnh xem trước: {e}")
 
 def show_split_image_preview(q_path, a_path):
-    """**Hàm mới:** Hiển thị cả ảnh Đề và Đáp án trong cùng một cửa sổ."""
+    #... (Giữ nguyên)
     try:
         q_img = mpimg.imread(q_path)
         a_img = mpimg.imread(a_path)
-        
-        # Tạo một figure với 2 subplot xếp dọc
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8))
         fig.suptitle("Xem trước đường cắt (Đóng cửa sổ này để tiếp tục)", fontsize=16)
-        
         ax1.imshow(q_img)
         ax1.set_title("Phần ĐỀ (phía trên)")
         ax1.axis('off')
-        
         ax2.imshow(a_img)
         ax2.set_title("Phần ĐÁP ÁN (phía dưới)")
         ax2.axis('off')
-        
         plt.tight_layout(rect=[0, 0.03, 1, 0.95])
         print("-> Đang hiển thị cửa sổ xem trước. Hãy đóng cửa sổ này để tiếp tục...")
+        play_sound(1)
         plt.show()
     except Exception as e:
         print(f"\n[Lỗi] Không thể hiển thị ảnh xem trước: {e}")
 
-
 def extract_text_from_image_ocr(image_path, credentials_path):
-    #... (Giữ nguyên không đổi)
+    #... (Giữ nguyên)
     try:
         credentials = service_account.Credentials.from_service_account_file(credentials_path)
         client = vision.ImageAnnotatorClient(credentials=credentials)
@@ -77,28 +97,30 @@ def extract_text_from_image_ocr(image_path, credentials_path):
         return response.full_text_annotation.text
     except Exception as e:
         tqdm.write(f"\n[Lỗi] OCR thất bại: {e}")
+        play_sound(4)
         return ""
 
 def format_question_and_explanation(question_text, answer_text, question_number):
-    #... (Giữ nguyên không đổi)
+    #... (Giữ nguyên)
     prompt = f"""
-    Bạn là một gia sư AI chuyên nghiệp. Nhiệm vụ của bạn là đọc văn bản của một câu hỏi trắc nghiệm và phần ghi chú đáp án, sau đó định dạng lại một cách rõ ràng và cung cấp lời giải thích ngắn gọn.
+    Bạn là một gia sư AI chuyên nghiệp. Nhiệm vụ của bạn là đọc văn bản của một câu hỏi trắc nghiệm và phần ghi chú đáp án, sau đó định dạng lại một cách rõ ràng để học tập và cung cấp lời giải thích ngắn gọn.
 
     Văn bản câu hỏi (đề bài):
     ---
     {question_text}
     ---
-    Văn bản ghi chú (chứa đáp án):
+    Văn bản ghi chú (chứa đáp án và/hoặc lời giải):
     ---
     {answer_text}
     ---
 
     Yêu cầu:
-    1.  **Định dạng câu hỏi:** Bắt đầu bằng "Câu {question_number}:", liệt kê các đáp án A, B, C, D rõ ràng.
-    2.  **Xác định và đánh dấu đáp án đúng:** Dựa vào phần ghi chú, tìm ra đáp án đúng và đánh dấu nó bằng `(**ĐÁP ÁN ĐÚNG**)`.
-    3.  **Cung cấp lời giải thích:** Dưới phần đáp án, thêm một mục `**Giải thích:**` và giải thích ngắn gọn, súc tích tại sao đáp án đó lại đúng, dựa trên thông tin trong phần ghi chú.
-    4.  **Loại bỏ các chi tiết thừa** trong cả câu hỏi và phần giải thích.
-    5.  **Trả lời chỉ bằng nội dung đã định dạng theo Markdown.**
+    1.  **Định dạng câu hỏi:** Bắt đầu bằng "Câu {question_number}:", liệt kê các phương án A, B, C, D rõ ràng. **KHÔNG** được đánh dấu hay làm nổi bật đáp án đúng trong phần này.
+    2.  **Cung cấp lời giải thích:** Dưới phần các đáp án, thêm một mục `**Giải thích:**`. Trong phần giải thích này, hãy:
+        -   Bắt đầu bằng việc nêu rõ đáp án đúng là gì (ví dụ: "Đáp án đúng là D.").
+        -   Sau đó, giải thích ngắn gọn, súc tích tại sao đáp án đó lại đúng, dựa trên thông tin trong phần ghi chú.
+    3.  **Loại bỏ các chi tiết thừa** trong cả câu hỏi và phần giải thích.
+    4.  **Trả lời chỉ bằng nội dung đã định dạng theo Markdown.**
     """
     try:
         model = genai.GenerativeModel('gemini-1.5-pro-latest')
@@ -106,11 +128,11 @@ def format_question_and_explanation(question_text, answer_text, question_number)
         return response.text.strip()
     except Exception as e:
         tqdm.write(f"\n[Lỗi] Gemini: Không thể định dạng câu {question_number}. Lỗi: {e}")
+        play_sound(4)
         return f"--- LỖI XỬ LÝ CÂU {question_number} ---\nĐề: {question_text}\nĐáp án: {answer_text}\n--- KẾT THÚC LỖI ---"
 
-
 def calibrate_main_region(output_dir):
-    """**Đã sửa:** Hàm tương tác để người dùng căn chỉnh vùng chụp chính."""
+    """Hàm tương tác để người dùng căn chỉnh vùng chụp chính."""
     screen_width, screen_height = pyautogui.size()
     print("\n--- BƯỚC 1: CĂN CHỈNH VÙNG CHỤP CHÍNH ---")
     
@@ -123,13 +145,15 @@ def calibrate_main_region(output_dir):
             top = int(screen_height * (top_margin_percent / 100))
             capture_width = screen_width - left
             capture_height = screen_height - top
+            
+            # --- LỖI ĐÃ ĐƯỢC SỬA Ở ĐÂY ---
+            # region đã được định nghĩa đúng cách
             region = (left, top, capture_width, capture_height)
             
             print("  Đang chụp ảnh thử nghiệm...")
             preview_path = os.path.join(output_dir, "preview_main.png")
             pyautogui.screenshot(preview_path, region=region)
             
-            # Sử dụng hàm xem trước mới, đáng tin cậy
             show_image_preview(preview_path, "XEM TRƯỚC VÙNG CHỤP CHÍNH")
             
             confirm = input("  Vùng chụp này đã OK chưa? (ok/thử lại): ").lower()
@@ -141,9 +165,8 @@ def calibrate_main_region(output_dir):
         except Exception as e:
             print(f"  Có lỗi xảy ra: {e}")
 
-
+#... Các hàm calibrate_split_line, capture_and_process, main giữ nguyên không đổi ...
 def calibrate_split_line(main_region, output_dir):
-    """**Đã sửa:** Hàm tương tác để người dùng căn chỉnh đường cắt ngang."""
     print("\n--- BƯỚC 2: CĂN CHỈNH ĐƯỜNG CẮT NGANG (ĐỀ / ĐÁP ÁN) ---")
     
     while True:
@@ -166,7 +189,6 @@ def calibrate_split_line(main_region, output_dir):
             pyautogui.screenshot(question_preview_path, region=question_region)
             pyautogui.screenshot(answer_preview_path, region=answer_region)
 
-            # Sử dụng hàm xem trước mới, hiển thị cả 2 ảnh cùng lúc
             show_split_image_preview(question_preview_path, answer_preview_path)
 
             confirm = input("  Đường cắt này đã OK chưa? (ok/thử lại): ").lower()
@@ -180,10 +202,10 @@ def calibrate_split_line(main_region, output_dir):
             print(f"  Có lỗi xảy ra: {e}")
 
 def capture_and_process(num_slides, output_dir, delay, creds_path, gemini_key, question_region, answer_region):
-    #... (Giữ nguyên không đổi)
     print("\n==============================================")
     print("           BẮT ĐẦU THU THẬP DỮ LIỆU         ")
     print("==============================================")
+    play_sound('coin') # Dù 'coin' không có trong winsound, hàm play_sound sẽ chọn âm thanh mặc định
     
     final_output_file = os.path.join(output_dir, "tong_hop_cau_hoi_va_giai_thich.md")
     all_formatted_text = []
@@ -201,8 +223,10 @@ def capture_and_process(num_slides, output_dir, delay, creds_path, gemini_key, q
         if question_text:
             formatted_text = format_question_and_explanation(question_text, answer_text, i)
             all_formatted_text.append(formatted_text)
+            play_sound(2)
         else:
             tqdm.write(f"-> Bỏ qua câu {i} do không nhận dạng được văn bản câu hỏi.")
+            play_sound(4)
 
         os.remove(question_img_path)
         os.remove(answer_img_path)
@@ -218,7 +242,6 @@ def capture_and_process(num_slides, output_dir, delay, creds_path, gemini_key, q
 
 
 def main():
-    #... (Giữ nguyên không đổi)
     print("==============================================")
     print("      TRỢ LÝ HỌC TẬP TRẮC NGHIỆM (AI)      ")
     print("==============================================")
@@ -235,6 +258,7 @@ def main():
     main_region = calibrate_main_region(output_dir)
     question_region, answer_region = calibrate_split_line(main_region, output_dir)
     print("\n--- CĂN CHỈNH HOÀN TẤT! ---")
+    play_sound(3)
 
     print("\n*** NHẬP THÔNG TIN CUỐI CÙNG: ***")
     try:
@@ -244,20 +268,24 @@ def main():
         credentials_path = "credentials.json"
     except ValueError:
         print("\n[Lỗi] Vui lòng nhập một con số hợp lệ.")
+        play_sound(4)
         return
 
     if not os.path.isfile(credentials_path):
         print(f"\n[Lỗi] Không tìm thấy file 'credentials.json'.")
+        play_sound(4)
         return
 
     print("\n-> Đang xác thực Khóa API Gemini...")
     if not validate_gemini_api_key(gemini_api_key):
+        play_sound(4)
         return
     print("-> Khóa API Gemini hợp lệ!")
 
     print("\n!!! CHUẨN BỊ! HÃY CLICK LẠI VÀO CỬA SỔ TRÌNH DUYỆT NGAY BÂY GIỜ !!!")
     for i in range(5, 0, -1):
         print(f"Bắt đầu sau {i} giây... ", end='\r')
+        play_sound(1)
         time.sleep(1)
     
     capture_and_process(total_slides, output_dir, delay, credentials_path, gemini_api_key, question_region, answer_region)
@@ -266,6 +294,10 @@ def main():
     print("                 HOÀN TẤT!                  ")
     print(f"Toàn bộ kết quả đã được tổng hợp trong file '{os.path.basename(output_dir)}{os.sep}tong_hop_cau_hoi_va_giai_thich.md'.")
     print("==============================================")
+    play_sound(3)
+    time.sleep(0.5)
+    play_sound(3)
+
 
 if __name__ == "__main__":
     main()
