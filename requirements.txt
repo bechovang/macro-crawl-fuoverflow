@@ -1,7 +1,6 @@
-selenium
+pyautogui
 google-cloud-vision
 google-generativeai
-google-auth
-webdriver-manager
-pillow
 tqdm
+Pillow
+matplotlib
