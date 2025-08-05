@@ -217,34 +217,84 @@ def calibrate_main_region(output_dir):
     screen_width, screen_height = pyautogui.size()
     print("\n--- BƯỚC 1: CĂN CHỈNH VÙNG CHỤP CHÍNH ---")
     
-    while True:
+    # Hỏi người dùng muốn dùng phương pháp nào
+    print("Chọn phương pháp canh chỉnh:")
+    print("1. Nhập phần trăm thủ công")
+    print("2. Chọn vùng bằng chuột (khuyến nghị)")
+    
+    choice = input("Nhập lựa chọn (1/2): ").strip()
+    
+    if choice == "2":
+        # Sử dụng công cụ canh chỉnh bằng chuột
         try:
-            left_margin_percent = int(input("  -> Nhập % thụt vào từ LỀ TRÁI (vd: 10): "))
-            top_margin_percent = int(input("  -> Nhập % thụt vào từ LỀ TRÊN (vd: 15): "))
+            from mouse_calibration import calibrate_with_mouse
+            print("\n-> Chuẩn bị mở công cụ canh chỉnh...")
+            print("-> Hãy đảm bảo cửa sổ trình duyệt đang ở chế độ toàn màn hình")
+            print("-> Nhấn Enter để bắt đầu...")
+            input()
             
-            left = int(screen_width * (left_margin_percent / 100))
-            top = int(screen_height * (top_margin_percent / 100))
-            capture_width = screen_width - left
-            capture_height = screen_height - top
+            region = calibrate_with_mouse()
             
-            # --- LỖI ĐÃ ĐƯỢC SỬA Ở ĐÂY ---
-            # region đã được định nghĩa đúng cách
-            region = (left, top, capture_width, capture_height)
-            
-            print("  Đang chụp ảnh thử nghiệm...")
-            preview_path = os.path.join(output_dir, "preview_main.png")
-            pyautogui.screenshot(preview_path, region=region)
-            
-            show_image_preview(preview_path, "XEM TRƯỚC VÙNG CHỤP CHÍNH")
-            
-            confirm = input("  Vùng chụp này đã OK chưa? (ok/thử lại): ").lower()
-            if confirm == 'ok':
-                os.remove(preview_path)
-                return region
-        except ValueError:
-            print("  Vui lòng nhập một con số!")
+            if region:
+                x, y, width, height = region
+                print(f"\n✅ Vùng chụp đã chọn: ({x}, {y}, {width}, {height})")
+                
+                # Chụp ảnh thử nghiệm để xác nhận
+                print("  Đang chụp ảnh thử nghiệm...")
+                preview_path = os.path.join(output_dir, "preview_main.png")
+                pyautogui.screenshot(preview_path, region=region)
+                
+                show_image_preview(preview_path, "XEM TRƯỚC VÙNG CHỤP CHÍNH")
+                
+                confirm = input("  Vùng chụp này đã OK chưa? (ok/thử lại): ").lower()
+                if confirm == 'ok':
+                    os.remove(preview_path)
+                    return region
+                else:
+                    print("-> Chuyển sang phương pháp thủ công.")
+                    choice = "1"
+            else:
+                print("\n❌ Không có vùng nào được chọn, chuyển sang phương pháp thủ công.")
+                choice = "1"
+        except ImportError:
+            print("\n❌ Không thể import công cụ canh chỉnh bằng chuột.")
+            print("Chuyển sang phương pháp thủ công.")
+            choice = "1"
         except Exception as e:
-            print(f"  Có lỗi xảy ra: {e}")
+            print(f"\n❌ Lỗi khi sử dụng công cụ canh chỉnh: {e}")
+            print("Chuyển sang phương pháp thủ công.")
+            choice = "1"
+    
+    if choice == "1":
+        # Phương pháp thủ công
+        while True:
+            try:
+                left_margin_percent = int(input("  -> Nhập % thụt vào từ LỀ TRÁI (vd: 10): "))
+                top_margin_percent = int(input("  -> Nhập % thụt vào từ LỀ TRÊN (vd: 15): "))
+                
+                left = int(screen_width * (left_margin_percent / 100))
+                top = int(screen_height * (top_margin_percent / 100))
+                capture_width = screen_width - left
+                capture_height = screen_height - top
+                
+                region = (left, top, capture_width, capture_height)
+                
+                print("  Đang chụp ảnh thử nghiệm...")
+                preview_path = os.path.join(output_dir, "preview_main.png")
+                pyautogui.screenshot(preview_path, region=region)
+                
+                show_image_preview(preview_path, "XEM TRƯỚC VÙNG CHỤP CHÍNH")
+                
+                confirm = input("  Vùng chụp này đã OK chưa? (ok/thử lại): ").lower()
+                if confirm == 'ok':
+                    os.remove(preview_path)
+                    return region
+            except ValueError:
+                print("  Vui lòng nhập một con số!")
+            except Exception as e:
+                print(f"  Có lỗi xảy ra: {e}")
+    
+    return None
 
 def calibrate_split_line(main_region, output_dir):
     """Hàm tương tác để người dùng căn chỉnh đường cắt ngang."""

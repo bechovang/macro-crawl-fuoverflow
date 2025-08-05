@@ -13,6 +13,7 @@ Bạn mệt mỏi với việc phải gõ lại hoặc chụp ảnh màn hình t
 
 ## Tính năng chính
 
+-   **Canh chỉnh bằng chuột:** Công cụ canh chỉnh trực quan cho phép bạn kéo chuột để chọn vùng chụp chính xác.
 -   **Căn chỉnh Tương tác:** Cho phép bạn tự định nghĩa vùng chụp và đường cắt một cách trực quan trước khi chạy.
 -   **Độ chính xác cao:** Sử dụng OCR.space API, một dịch vụ OCR chuyên nghiệp với độ chính xác cao.
 -   **Giải thích thông minh:** Tích hợp Gemini 1.5 Pro không chỉ để định dạng mà còn để giải thích đáp án, giúp bạn hiểu sâu hơn.
@@ -82,7 +83,11 @@ pip install -r requirements.txt
 1.  Mở terminal trong thư mục dự án (đảm bảo môi trường ảo `venv` đã được kích hoạt).
 2.  Chạy lệnh: `python main.py`
 3.  Chương trình sẽ hướng dẫn bạn qua 2 bước căn chỉnh:
-    -   **Căn chỉnh vùng chụp chính:** Nhập phần trăm thụt lề từ trên và trái. Một cửa sổ xem trước sẽ hiện ra. Hãy xem và đóng nó lại, sau đó nhập `ok` nếu đã vừa ý, hoặc `thử lại` để làm lại.
+    -   **Căn chỉnh vùng chụp chính:** 
+        - Chọn phương pháp: Nhập phần trăm thủ công hoặc chọn vùng bằng chuột (khuyến nghị)
+        - Nếu chọn chuột: Kéo chuột để chọn vùng chụp, nhấn Enter để xác nhận
+        - Nếu chọn thủ công: Nhập phần trăm thụt lề từ trên và trái
+        - Một cửa sổ xem trước sẽ hiện ra. Hãy xem và đóng nó lại, sau đó nhập `ok` nếu đã vừa ý, hoặc `thử lại` để làm lại.
     -   **Căn chỉnh đường cắt:** Nhập phần trăm cắt từ dưới lên cho phần đáp án. Hai cửa sổ xem trước (Đề và Đáp án) sẽ hiện ra. Hãy xem và đóng chúng, sau đó xác nhận.
 
 ### Bước 3: Nhập thông tin và Bắt đầu
