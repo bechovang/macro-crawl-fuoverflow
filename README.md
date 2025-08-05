@@ -29,13 +29,14 @@ Trước khi bắt đầu, bạn cần chuẩn bị:
 1.  **Python 3.8+**
 2.  **OCR.space API Key**: Bắt buộc để OCR. Lấy từ [OCR.space](https://ocr.space/ocrapi/freekey) (miễn phí, 25,000 ảnh/tháng).
 3.  **Khóa API của Google Gemini** (tùy chọn): Chỉ cần nếu bạn muốn sử dụng Gemini để định dạng câu hỏi. Lấy từ [Google AI Studio](https://aistudio.google.com/app/apikey).
+4.  **Nhiều API Key** (khuyến nghị): Để xử lý nhiều slide, nên có nhiều OCR.space API key để tránh giới hạn 180 requests/giờ.
 
 ## Cài đặt & Thiết lập
 
 ### Bước 1: Chuẩn bị Thư mục và Code
 
 1.  Tạo một thư mục mới cho dự án, ví dụ `ai_quiz_helper`.
-2.  Sao chép file `main.py` và `requirements.txt` vào thư mục này.
+2.  Sao chép file `main.py`, `requirements.txt`, và `test_ocrspace.py` vào thư mục này.
 
 ### Bước 2: Tạo và Kích hoạt Môi trường ảo (Rất khuyến khích)
 
@@ -70,6 +71,7 @@ pip install -r requirements.txt
 - OCR.space API cần kết nối internet để hoạt động.
 - Gói miễn phí cho phép 25,000 ảnh/tháng, đủ cho hầu hết nhu cầu.
 - Để có âm thanh thông báo, hãy đặt file `purchase-success.mp3` và `victory.mp3` trong cùng thư mục với `main.py`.
+- Sử dụng `test_ocrspace.py` để quản lý và test nhiều API key hiệu quả.
 
 ## Hướng dẫn sử dụng
 
@@ -121,9 +123,34 @@ OCR.space API có giới hạn sử dụng:
 - **180 requests mỗi giờ**
 
 Nếu bạn cần xử lý nhiều slide, hãy cân nhắc:
-- Sử dụng nhiều tài khoản Google để có nhiều API key (nó vẫn ko cho)
+- Sử dụng nhiều tài khoản Google để có nhiều API key
 - Chia nhỏ công việc thành nhiều lần chạy
 - Sử dụng chế độ OCR-only để tiết kiệm API calls
+
+### Quản lý API Key với test_ocrspace.py
+
+Để quản lý nhiều API key hiệu quả, sử dụng script `test_ocrspace.py`:
+
+```bash
+python test_ocrspace.py
+```
+
+**Tính năng:**
+- **Test nhiều key**: Nhập danh sách key theo format `Tên1;Key1|Tên2;Key2|...`
+- **Xem trạng thái**: Kiểm tra key nào hoạt động, đang chờ, hoặc lỗi
+- **Bảo vệ giới hạn**: Tự động ngăn test cùng key trong vòng 1 giờ
+- **Lưu lịch sử**: Tất cả kết quả test được lưu vào `check_key.txt`
+
+**Ví dụ sử dụng:**
+```
+Nhập danh sách key: Key1;abc123|Key2;def456|Key3;ghi789
+```
+
+**Kết quả:**
+- Hiển thị key nào hoạt động ✅
+- Key nào đang chờ ⏰ (chưa đủ 1 giờ từ lần test cuối)
+- Key nào lỗi ❌
+- Ước tính khả năng xử lý slide/giờ
 
 ## Ưu điểm của OCR.space
 
