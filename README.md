@@ -6,7 +6,7 @@ Một công cụ mạnh mẽ sử dụng Trí tuệ Nhân tạo (AI) để tự 
 
 Bạn mệt mỏi với việc phải gõ lại hoặc chụp ảnh màn hình từng câu hỏi để ôn tập? Công cụ này sẽ giải quyết vấn đề đó. Nó hoạt động như một trợ lý ảo, "nhìn" vào màn hình của bạn, tự động chụp lại câu hỏi và đáp án, sau đó sử dụng AI để:
 
-1.  **Nhận dạng văn bản** từ hình ảnh một cách chính xác.
+1.  **Nhận dạng văn bản** từ hình ảnh một cách chính xác bằng VietOCR (tối ưu cho tiếng Việt).
 2.  **Định dạng lại** câu hỏi và các lựa chọn một cách sạch sẽ, rõ ràng.
 3.  **Cung cấp lời giải thích** ngắn gọn cho đáp án đúng.
 4.  **Tổng hợp tất cả** vào một file duy nhất, sẵn sàng cho việc ôn tập.
@@ -14,10 +14,10 @@ Bạn mệt mỏi với việc phải gõ lại hoặc chụp ảnh màn hình t
 ## Tính năng chính
 
 -   **Căn chỉnh Tương tác:** Cho phép bạn tự định nghĩa vùng chụp và đường cắt một cách trực quan trước khi chạy.
--   **Độ chính xác cao:** Sử dụng Google Cloud Vision, một trong những công nghệ OCR (Nhận dạng ký tự quang học) hàng đầu thế giới.
+-   **Độ chính xác cao:** Sử dụng OCR.space API, một dịch vụ OCR chuyên nghiệp với độ chính xác cao.
 -   **Giải thích thông minh:** Tích hợp Gemini 1.5 Pro không chỉ để định dạng mà còn để giải thích đáp án, giúp bạn hiểu sâu hơn.
 -   **Giấu đáp án:** Câu hỏi được trình bày không có đáp án đúng, giúp bạn tự kiểm tra kiến thức. Đáp án và giải thích được đặt ở phần riêng biệt.
--   **Phản hồi Âm thanh:** Phát ra các tiếng "bíp" để thông báo tiến trình (bắt đầu, hoàn thành một câu, kết thúc toàn bộ), giúp bạn không cần nhìn vào màn hình terminal.
+-   **Phản hồi Âm thanh:** Phát âm thanh "purchase-success.mp3" khi hoàn thành một câu hỏi và "victory.mp3" 3 lần khi kết thúc toàn bộ chương trình.
 -   **Tổng hợp tiện lợi:** Tất cả các câu hỏi được gộp vào một file Markdown duy nhất, dễ dàng đọc, tìm kiếm và sao chép.
 
 ## Yêu cầu hệ thống
@@ -25,11 +25,8 @@ Bạn mệt mỏi với việc phải gõ lại hoặc chụp ảnh màn hình t
 Trước khi bắt đầu, bạn cần chuẩn bị:
 
 1.  **Python 3.8+**
-2.  **Tài khoản Google Cloud Platform:**
-    -   Đã kích hoạt thanh toán (có thể sử dụng 300$ miễn phí cho người dùng mới).
-    -   Đã bật **Cloud Vision API**.
-    -   Đã tạo một **Service Account** và tải về file **credentials JSON** của nó.
-3.  **Khóa API của Google Gemini**: Lấy từ [Google AI Studio](https://aistudio.google.com/app/apikey).
+2.  **OCR.space API Key**: Bắt buộc để OCR. Lấy từ [OCR.space](https://ocr.space/ocrapi/freekey) (miễn phí, 25,000 ảnh/tháng).
+3.  **Khóa API của Google Gemini** (tùy chọn): Chỉ cần nếu bạn muốn sử dụng Gemini để định dạng câu hỏi. Lấy từ [Google AI Studio](https://aistudio.google.com/app/apikey).
 
 ## Cài đặt & Thiết lập
 
@@ -37,7 +34,6 @@ Trước khi bắt đầu, bạn cần chuẩn bị:
 
 1.  Tạo một thư mục mới cho dự án, ví dụ `ai_quiz_helper`.
 2.  Sao chép file `main.py` và `requirements.txt` vào thư mục này.
-3.  Sao chép file **`credentials.json`** bạn đã tải từ Google Cloud vào cùng thư mục này.
 
 ### Bước 2: Tạo và Kích hoạt Môi trường ảo (Rất khuyến khích)
 
@@ -68,6 +64,11 @@ Khi môi trường ảo đã được kích hoạt, hãy chạy lệnh sau. Lệ
 pip install -r requirements.txt
 ```
 
+**Lưu ý:** 
+- OCR.space API cần kết nối internet để hoạt động.
+- Gói miễn phí cho phép 25,000 ảnh/tháng, đủ cho hầu hết nhu cầu.
+- Để có âm thanh thông báo, hãy đặt file `purchase-success.mp3` và `victory.mp3` trong cùng thư mục với `main.py`.
+
 ## Hướng dẫn sử dụng
 
 ### Bước 1: Chuẩn bị Giao diện
@@ -89,11 +90,24 @@ pip install -r requirements.txt
 1.  Sau khi căn chỉnh xong, chương trình sẽ yêu cầu bạn nhập các thông tin cuối cùng:
     -   Tổng số câu hỏi cần lấy.
     -   Độ trễ giữa mỗi câu (để slide có thời gian tải).
-    -   Khóa API Gemini của bạn.
-2.  Chương trình sẽ bắt đầu đếm ngược 5 giây. **TRONG LÚC NÀY, HÃY NHANH CHÓNG CLICK LẠI VÀO CỬA SỔ TRÌNH DUYỆT ĐANG Ở CHẾ ĐỘ TOÀN MÀN HÌNH.**
+    -   **OCR.space API Key:** Bắt buộc để OCR.
+    -   **Tùy chọn sử dụng Gemini:** Chọn có (y) hoặc không (n) để sử dụng Gemini định dạng câu hỏi.
+    -   **Khóa API Gemini:** Chỉ cần nhập nếu chọn sử dụng Gemini.
+2.  Chương trình sẽ xác thực OCR.space API key.
+3.  Chương trình sẽ bắt đầu đếm ngược 5 giây. **TRONG LÚC NÀY, HÃY NHANH CHÓNG CLICK LẠI VÀO CỬA SỔ TRÌNH DUYỆT ĐANG Ở CHẾ ĐỘ TOÀN MÀN HÌNH.**
 
 ### Bước 4: Xem kết quả
 
 -   Chương trình sẽ tự động chạy, bạn sẽ nghe thấy âm thanh báo hiệu sau mỗi câu hỏi được xử lý.
 -   Khi hoàn tất, một âm thanh báo hiệu thành công sẽ vang lên.
--   Toàn bộ kết quả được tổng hợp trong thư mục `ket_qua_hoc_tap` tại file **`tong_hop_cau_hoi_va_giai_thich.md`**.
+-   Kết quả được lưu trong thư mục `ket_qua_hoc_tap`:
+    -   **File tổng hợp:** `tong_hop_cau_hoi_va_giai_thich.md` (tất cả câu hỏi)
+    -   **File chia nhỏ:** `cau_hoi_001.md`, `cau_hoi_002.md`, ... (mỗi file 100 câu)
+
+## Ưu điểm của OCR.space
+
+- **Độ chính xác cao:** Sử dụng các model OCR tiên tiến được huấn luyện trên dữ liệu lớn.
+- **Hỗ trợ đa ngôn ngữ:** Hỗ trợ nhiều ngôn ngữ bao gồm tiếng Anh và tiếng Việt.
+- **Không cần cài đặt model nặng:** Tất cả xử lý được thực hiện trên server.
+- **API đơn giản:** Dễ dàng tích hợp và sử dụng.
+- **Gói miễn phí hào phóng:** 25,000 ảnh/tháng miễn phí.

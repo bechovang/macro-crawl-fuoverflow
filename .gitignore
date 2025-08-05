@@ -44,7 +44,7 @@ screenshots_output/
 slides_output/
 temp_*
 
-# Chrome profile (if using)
+# Chrome profile (no longer needed with VietOCR)
 chrome_profile_for_bot/
 
 # IDE and Editor files

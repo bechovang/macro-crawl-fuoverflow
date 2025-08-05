@@ -1,6 +1,7 @@
 pyautogui
-google-cloud-vision
 google-generativeai
 tqdm
 Pillow
 matplotlib
+requests
+pygame
