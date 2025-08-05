@@ -158,15 +158,37 @@ def extract_text_from_image_ocr(image_path, ocrspace_api_key):
         response = requests.post(url, data=payload, timeout=30)
         result = response.json()
         
-        if result['IsErroredOnProcessing']:
-            tqdm.write(f"\n[Lỗi] OCR.space API: {result['ErrorMessage']}")
+        # Debug: In ra cấu trúc response để kiểm tra
+        if 'IsErroredOnProcessing' in result and result['IsErroredOnProcessing']:
+            error_msg = result.get('ErrorMessage', 'Unknown error')
+            tqdm.write(f"\n[Lỗi] OCR.space API: {error_msg}")
+            return ""
+        
+        # Kiểm tra cấu trúc response
+        if 'ParsedResults' not in result:
+            tqdm.write(f"\n[Lỗi] OCR.space API: Response không có ParsedResults")
+            tqdm.write(f"Response: {result}")
+            return ""
+        
+        if not result['ParsedResults']:
+            tqdm.write(f"\n[Lỗi] OCR.space API: ParsedResults rỗng")
             return ""
         
         # Trích xuất text từ kết quả
-        parsed_text = result['ParsedResults'][0]['ParsedText']
+        first_result = result['ParsedResults'][0]
+        if 'ParsedText' not in first_result:
+            tqdm.write(f"\n[Lỗi] OCR.space API: Không có ParsedText trong kết quả")
+            tqdm.write(f"First result: {first_result}")
+            return ""
+        
+        parsed_text = first_result['ParsedText']
         
         return parsed_text.strip()
         
+    except KeyError as e:
+        tqdm.write(f"\n[Lỗi] OCR.space API - KeyError: {e}")
+        tqdm.write(f"Response structure: {result}")
+        return ""
     except Exception as e:
         tqdm.write(f"\n[Lỗi] OCR.space API thất bại: {e}")
         return ""
@@ -175,35 +197,62 @@ def format_question_and_explanation(question_text, answer_text, question_number,
     """Định dạng câu hỏi và giải thích."""
     if not use_gemini:
         # Chỉ OCR, không dùng Gemini
-        return f"""Câu {question_number}:
+        if answer_text:
+            return f"""Câu {question_number}:
 {question_text}
 
 **Ghi chú:**
 {answer_text}
 
 ---"""
+        else:
+            # Trường hợp OCR nguyên 1 slide, không có phần đáp án riêng
+            return f"""Câu {question_number}:
+{question_text}
+
+---
+"""
     
     # Sử dụng Gemini để định dạng
-    prompt = f"""
-    Bạn là một gia sư AI chuyên nghiệp. Nhiệm vụ của bạn là đọc văn bản của một câu hỏi trắc nghiệm và phần ghi chú đáp án, sau đó định dạng lại một cách rõ ràng để học tập và cung cấp lời giải thích ngắn gọn.
+    if answer_text:
+        # Trường hợp có phần đáp án riêng
+        prompt = f"""
+        Bạn là một gia sư AI chuyên nghiệp. Nhiệm vụ của bạn là đọc văn bản của một câu hỏi trắc nghiệm và phần ghi chú đáp án, sau đó định dạng lại một cách rõ ràng để học tập và cung cấp lời giải thích ngắn gọn.
 
-    Văn bản câu hỏi (đề bài):
-    ---
-    {question_text}
-    ---
-    Văn bản ghi chú (chứa đáp án và/hoặc lời giải):
-    ---
-    {answer_text}
-    ---
+        Văn bản câu hỏi (đề bài):
+        ---
+        {question_text}
+        ---
+        Văn bản ghi chú (chứa đáp án và/hoặc lời giải):
+        ---
+        {answer_text}
+        ---
 
-    Yêu cầu:
-    1.  **Định dạng câu hỏi:** Bắt đầu bằng "Câu {question_number}:", liệt kê các phương án A, B, C, D rõ ràng. **KHÔNG** được đánh dấu hay làm nổi bật đáp án đúng trong phần này.
-    2.  **Cung cấp lời giải thích:** Dưới phần các đáp án, thêm một mục `**Giải thích:**`. Trong phần giải thích này, hãy:
-        -   Bắt đầu bằng việc nêu rõ đáp án đúng là gì (ví dụ: "Đáp án đúng là D.").
-        -   Sau đó, giải thích ngắn gọn, súc tích tại sao đáp án đó lại đúng, dựa trên thông tin trong phần ghi chú.
-    3.  **Loại bỏ các chi tiết thừa** trong cả câu hỏi và phần giải thích.
-    4.  **Trả lời chỉ bằng nội dung đã định dạng theo Markdown.**
-    """
+        Yêu cầu:
+        1.  **Định dạng câu hỏi:** Bắt đầu bằng "Câu {question_number}:", liệt kê các phương án A, B, C, D rõ ràng. **KHÔNG** được đánh dấu hay làm nổi bật đáp án đúng trong phần này.
+        2.  **Cung cấp lời giải thích:** Dưới phần các đáp án, thêm một mục `**Giải thích:**`. Trong phần giải thích này, hãy:
+            -   Bắt đầu bằng việc nêu rõ đáp án đúng là gì (ví dụ: "Đáp án đúng là D.").
+            -   Sau đó, giải thích ngắn gọn, súc tích tại sao đáp án đó lại đúng, dựa trên thông tin trong phần ghi chú.
+        3.  **Loại bỏ các chi tiết thừa** trong cả câu hỏi và phần giải thích.
+        4.  **Trả lời chỉ bằng nội dung đã định dạng theo Markdown.**
+        """
+    else:
+        # Trường hợp OCR nguyên 1 slide, không có phần đáp án riêng
+        prompt = f"""
+        Bạn là một gia sư AI chuyên nghiệp. Nhiệm vụ của bạn là đọc văn bản của một slide trắc nghiệm và định dạng lại một cách rõ ràng để học tập.
+
+        Văn bản slide (bao gồm cả câu hỏi và đáp án):
+        ---
+        {question_text}
+        ---
+
+        Yêu cầu:
+        1.  **Định dạng câu hỏi:** Bắt đầu bằng "Câu {question_number}:", liệt kê các phương án A, B, C, D rõ ràng nếu có.
+        2.  **Tách biệt câu hỏi và đáp án:** Nếu trong văn bản có cả câu hỏi và đáp án, hãy tách chúng ra thành 2 phần riêng biệt.
+        3.  **Cung cấp lời giải thích:** Nếu có thông tin về đáp án đúng, hãy thêm phần `**Giải thích:**` để giải thích ngắn gọn.
+        4.  **Loại bỏ các chi tiết thừa** và định dạng lại cho dễ đọc.
+        5.  **Trả lời chỉ bằng nội dung đã định dạng theo Markdown.**
+        """
     try:
         model = genai.GenerativeModel('gemini-1.5-flash-latest')
         response = model.generate_content(prompt)
@@ -300,6 +349,21 @@ def calibrate_split_line(main_region, output_dir):
     """Hàm tương tác để người dùng căn chỉnh đường cắt ngang."""
     print("\n--- BƯỚC 2: CĂN CHỈNH ĐƯỜNG CẮT NGANG (ĐỀ / ĐÁP ÁN) ---")
     
+    # Hỏi người dùng muốn chia slide hay không
+    print("Chọn phương pháp xử lý slide:")
+    print("1. Chia slide thành 2 phần (Đề + Đáp án) - Mặc định")
+    print("2. OCR nguyên 1 slide (không chia)")
+    
+    split_choice = input("Nhập lựa chọn (1/2): ").strip()
+    
+    if split_choice == "2":
+        # Không chia slide, sử dụng toàn bộ vùng chính
+        print("-> Chọn OCR nguyên 1 slide")
+        return main_region, None  # Trả về main_region cho cả 2, None cho answer_region
+    
+    # Phương pháp chia slide (mặc định)
+    print("-> Chọn chia slide thành 2 phần")
+    
     while True:
         try:
             split_percent = int(input("  -> Nhập % cắt từ DƯỚI LÊN cho phần đáp án (vd: 20): "))
@@ -342,15 +406,36 @@ def capture_and_process(num_slides, output_dir, delay, ocrspace_api_key, gemini_
     current_file_text = []
     file_counter = 1
     
+    # Kiểm tra xem có chia slide hay không
+    is_split_mode = answer_region is not None
+    
     for i in tqdm(range(1, num_slides + 1), desc="Đang xử lý các câu hỏi"):
-        question_img_path = os.path.join(output_dir, f"temp_question_{i}.png")
-        answer_img_path = os.path.join(output_dir, f"temp_answer_{i}.png")
-        
-        pyautogui.screenshot(question_img_path, region=question_region)
-        pyautogui.screenshot(answer_img_path, region=answer_region)
-        
-        question_text = extract_text_from_image_ocr(question_img_path, ocrspace_api_key)
-        answer_text = extract_text_from_image_ocr(answer_img_path, ocrspace_api_key)
+        if is_split_mode:
+            # Chế độ chia slide (mặc định)
+            question_img_path = os.path.join(output_dir, f"temp_question_{i}.png")
+            answer_img_path = os.path.join(output_dir, f"temp_answer_{i}.png")
+            
+            pyautogui.screenshot(question_img_path, region=question_region)
+            pyautogui.screenshot(answer_img_path, region=answer_region)
+            
+            question_text = extract_text_from_image_ocr(question_img_path, ocrspace_api_key)
+            answer_text = extract_text_from_image_ocr(answer_img_path, ocrspace_api_key)
+            
+            os.remove(question_img_path)
+            os.remove(answer_img_path)
+        else:
+            # Chế độ OCR nguyên 1 slide
+            slide_img_path = os.path.join(output_dir, f"temp_slide_{i}.png")
+            
+            pyautogui.screenshot(slide_img_path, region=question_region)  # question_region chính là main_region
+            
+            full_text = extract_text_from_image_ocr(slide_img_path, ocrspace_api_key)
+            
+            os.remove(slide_img_path)
+            
+            # Tách text thành question và answer (nếu có thể)
+            question_text = full_text
+            answer_text = ""  # Không có phần đáp án riêng
         
         if question_text:
             formatted_text = format_question_and_explanation(question_text, answer_text, i, use_gemini)
@@ -358,10 +443,7 @@ def capture_and_process(num_slides, output_dir, delay, ocrspace_api_key, gemini_
             all_formatted_text.append(formatted_text)
             play_sound(2)
         else:
-            tqdm.write(f"-> Bỏ qua câu {i} do không nhận dạng được văn bản câu hỏi.")
-
-        os.remove(question_img_path)
-        os.remove(answer_img_path)
+            tqdm.write(f"-> Bỏ qua câu {i} do không nhận dạng được văn bản.")
         
         # Ghi file khi đủ 100 câu hoặc khi kết thúc
         if len(current_file_text) >= 100 or i == num_slides:

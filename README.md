@@ -15,6 +15,7 @@ Bạn mệt mỏi với việc phải gõ lại hoặc chụp ảnh màn hình t
 
 -   **Canh chỉnh bằng chuột:** Công cụ canh chỉnh trực quan cho phép bạn kéo chuột để chọn vùng chụp chính xác.
 -   **Căn chỉnh Tương tác:** Cho phép bạn tự định nghĩa vùng chụp và đường cắt một cách trực quan trước khi chạy.
+-   **Xử lý Slide Linh hoạt:** Chọn giữa chia slide thành 2 phần (Đề + Đáp án) hoặc OCR nguyên 1 slide.
 -   **Độ chính xác cao:** Sử dụng OCR.space API, một dịch vụ OCR chuyên nghiệp với độ chính xác cao.
 -   **Giải thích thông minh:** Tích hợp Gemini 1.5 Pro không chỉ để định dạng mà còn để giải thích đáp án, giúp bạn hiểu sâu hơn.
 -   **Giấu đáp án:** Câu hỏi được trình bày không có đáp án đúng, giúp bạn tự kiểm tra kiến thức. Đáp án và giải thích được đặt ở phần riêng biệt.
@@ -88,7 +89,11 @@ pip install -r requirements.txt
         - Nếu chọn chuột: Kéo chuột để chọn vùng chụp, nhấn Enter để xác nhận
         - Nếu chọn thủ công: Nhập phần trăm thụt lề từ trên và trái
         - Một cửa sổ xem trước sẽ hiện ra. Hãy xem và đóng nó lại, sau đó nhập `ok` nếu đã vừa ý, hoặc `thử lại` để làm lại.
-    -   **Căn chỉnh đường cắt:** Nhập phần trăm cắt từ dưới lên cho phần đáp án. Hai cửa sổ xem trước (Đề và Đáp án) sẽ hiện ra. Hãy xem và đóng chúng, sau đó xác nhận.
+    -   **Căn chỉnh đường cắt:** 
+        - Chọn phương pháp xử lý slide: Chia thành 2 phần (Đề + Đáp án) hoặc OCR nguyên 1 slide
+        - Nếu chọn chia slide: Nhập phần trăm cắt từ dưới lên cho phần đáp án
+        - Nếu chọn OCR nguyên slide: Không cần cắt, sử dụng toàn bộ vùng đã chọn
+        - Xem trước và xác nhận lựa chọn
 
 ### Bước 3: Nhập thông tin và Bắt đầu
 
