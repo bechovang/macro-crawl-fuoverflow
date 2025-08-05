@@ -121,7 +121,7 @@ OCR.space API có giới hạn sử dụng:
 - **180 requests mỗi giờ**
 
 Nếu bạn cần xử lý nhiều slide, hãy cân nhắc:
-- Sử dụng nhiều tài khoản Google để có nhiều API key
+- Sử dụng nhiều tài khoản Google để có nhiều API key (nó vẫn ko cho)
 - Chia nhỏ công việc thành nhiều lần chạy
 - Sử dụng chế độ OCR-only để tiết kiệm API calls
 
