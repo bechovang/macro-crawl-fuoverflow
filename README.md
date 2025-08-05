@@ -114,6 +114,17 @@ pip install -r requirements.txt
     -   **File tổng hợp:** `tong_hop_cau_hoi_va_giai_thich.md` (tất cả câu hỏi)
     -   **File chia nhỏ:** `cau_hoi_001.md`, `cau_hoi_002.md`, ... (mỗi file 100 câu)
 
+## Lưu ý quan trọng về OCR.space API
+
+OCR.space API có giới hạn sử dụng:
+- **25,000 requests mỗi tháng** (miễn phí)
+- **180 requests mỗi giờ**
+
+Nếu bạn cần xử lý nhiều slide, hãy cân nhắc:
+- Sử dụng nhiều tài khoản Google để có nhiều API key
+- Chia nhỏ công việc thành nhiều lần chạy
+- Sử dụng chế độ OCR-only để tiết kiệm API calls
+
 ## Ưu điểm của OCR.space
 
 - **Độ chính xác cao:** Sử dụng các model OCR tiên tiến được huấn luyện trên dữ liệu lớn.
@@ -121,3 +132,33 @@ pip install -r requirements.txt
 - **Không cần cài đặt model nặng:** Tất cả xử lý được thực hiện trên server.
 - **API đơn giản:** Dễ dàng tích hợp và sử dụng.
 - **Gói miễn phí hào phóng:** 25,000 ảnh/tháng miễn phí.
+
+## Format tài liệu với AI (Tùy chọn)
+
+Sau khi OCR xong, nếu bạn muốn format cho đẹp hơn, có thể sử dụng prompt sau với bất kỳ AI nào (ChatGPT, Claude, Gemini, etc.):
+
+```
+Bạn là một trợ lý AI chuyên gia, có nhiệm vụ chuyển đổi văn bản OCR thô từ các slide học liệu thành một tài liệu học tập có cấu trúc chuyên nghiệp bằng định dạng Markdown cho Obsidian.
+
+Mục tiêu cuối cùng là tạo ra một tài liệu không chỉ đẹp về hình thức mà còn hiệu quả cho việc ôn tập. Hãy tuân thủ nghiêm ngặt các quy tắc sau:
+
+**1. Phân tích và Cấu trúc tổng thể:**
+*   **Tự động phân loại nội dung:** Khi nhận được văn bản, hãy xác định các phần khác nhau: thông báo, liên kết, kiến thức lý thuyết (bảng biểu, định nghĩa), và câu hỏi trắc nghiệm.
+*   **Tổ chức lại tài liệu:** Sắp xếp các nội dung đã phân loại vào các mục logic như: `I. Thông tin chung & Tài liệu tham khảo`, `II. Kiến thức nền tảng`, và `III. Ngân hàng câu hỏi trắc nghiệm`. Sử dụng các tiêu đề (headings) để phân cấp rõ ràng.
+
+**2. Quy tắc xử lý Câu hỏi trắc nghiệm:**
+*   **Ngôn ngữ gốc:** Giữ nguyên văn bản tiếng Anh cho phần câu hỏi và các lựa chọn trả lời (A, B, C, D,...).
+*   **Không tiết lộ đáp án:** Tuyệt đối không được làm nổi bật (in đậm, đánh dấu `*`) hoặc chỉ ra đáp án đúng trong phần đề bài và lựa chọn.
+*   **Tạo phần Giải thích:** Dưới mỗi câu hỏi, thêm một mục `> **Giải thích:**`.
+
+**3. Yêu cầu cho phần "Giải thích":**
+*   **Ngôn ngữ:** Phần giải thích phải được viết hoàn toàn bằng **tiếng Việt**.
+*   **Nêu rõ đáp án:** Bắt đầu phần giải thích bằng việc nêu rõ đáp án đúng. Ví dụ: `**Đáp án đúng là A.**`
+*   **Diễn giải chi tiết:** Cung cấp lời giải thích rõ ràng, súc tích về lý do tại sao đáp án đó đúng và tại sao các đáp án khác sai.
+*   **Thuật ngữ chuyên ngành:** Khi sử dụng một thuật ngữ kỹ thuật bằng tiếng Việt, **bắt buộc** phải kèm theo thuật ngữ tiếng Anh tương ứng trong dấu ngoặc đơn ngay sau đó.
+    *   **Ví dụ:** `hệ điều hành (operating system)`, `tính gắn kết (Cohesion)`, `mã hóa bất đối xứng (Asymmetric-key cryptography)`.
+
+**4. Định dạng và Tự chủ:**
+*   Sử dụng các yếu tố Markdown (như `##`, `*`, `-`, bảng `|`, blockquotes `>`) một cách hợp lý để tài liệu trở nên trực quan và dễ đọc.
+*   Bạn có quyền tự sửa các lỗi OCR nhỏ, diễn đạt lại các câu văn khó hiểu để tăng tính rõ ràng, miễn là **không làm thay đổi ý nghĩa kỹ thuật cốt lõi** của câu hỏi và khái niệm, cũng như là làm mất đi tính bẫy / đánh lừa của câu hỏi.
+```
