@@ -406,6 +406,11 @@ def capture_and_process(num_slides, output_dir, delay, ocrspace_api_key, gemini_
     current_file_text = []
     file_counter = 1
     
+    # Khởi tạo file tổng hợp
+    final_output_file = os.path.join(output_dir, "tong_hop_cau_hoi_va_giai_thich.md")
+    with open(final_output_file, 'w', encoding='utf-8') as f:
+        f.write("# TỔNG HỢP CÁC CÂU HỎI VÀ GIẢI THÍCH\n\n")
+    
     # Kiểm tra xem có chia slide hay không
     is_split_mode = answer_region is not None
     
@@ -441,6 +446,11 @@ def capture_and_process(num_slides, output_dir, delay, ocrspace_api_key, gemini_
             formatted_text = format_question_and_explanation(question_text, answer_text, i, use_gemini)
             current_file_text.append(formatted_text)
             all_formatted_text.append(formatted_text)
+            
+            # Cập nhật file tổng hợp ngay lập tức
+            with open(final_output_file, 'a', encoding='utf-8') as f:
+                f.write(formatted_text + "\n\n---\n\n")
+            
             play_sound(2)
         else:
             tqdm.write(f"-> Bỏ qua câu {i} do không nhận dạng được văn bản.")
@@ -462,12 +472,7 @@ def capture_and_process(num_slides, output_dir, delay, ocrspace_api_key, gemini_
             pyautogui.press('down')
             time.sleep(delay)
     
-    # Ghi file tổng hợp
-    final_output_file = os.path.join(output_dir, "tong_hop_cau_hoi_va_giai_thich.md")
-    print(f"\n-> Đang ghi file tổng hợp: {final_output_file}")
-    with open(final_output_file, 'w', encoding='utf-8') as f:
-        f.write("# TỔNG HỢP CÁC CÂU HỎI VÀ GIẢI THÍCH\n\n")
-        f.write("\n\n---\n\n".join(all_formatted_text))
+    print(f"\n-> Hoàn thành! File tổng hợp đã được cập nhật liên tục: {final_output_file}")
 
 def main():
     print("==============================================")

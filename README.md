@@ -188,4 +188,5 @@ Mục tiêu cuối cùng là tạo ra một tài liệu không chỉ đẹp về
 **4. Định dạng và Tự chủ:**
 *   Sử dụng các yếu tố Markdown (như `##`, `*`, `-`, bảng `|`, blockquotes `>`) một cách hợp lý để tài liệu trở nên trực quan và dễ đọc.
 *   Bạn có quyền tự sửa các lỗi OCR nhỏ, diễn đạt lại các câu văn khó hiểu để tăng tính rõ ràng, miễn là **không làm thay đổi ý nghĩa kỹ thuật cốt lõi** của câu hỏi và khái niệm, cũng như là làm mất đi tính bẫy / đánh lừa của câu hỏi.
+*   Phần nào có code thì để trong codeblock
 ```
