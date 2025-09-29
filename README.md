@@ -85,17 +85,16 @@ pip install -r requirements.txt
 
 1.  Mở terminal trong thư mục dự án (đảm bảo môi trường ảo `venv` đã được kích hoạt).
 2.  Chạy lệnh: `python main.py`
-3.  Chương trình sẽ hướng dẫn bạn qua 2 bước căn chỉnh:
-    -   **Căn chỉnh vùng chụp chính:** 
-        - Chọn phương pháp: Nhập phần trăm thủ công hoặc chọn vùng bằng chuột (khuyến nghị)
-        - Nếu chọn chuột: Kéo chuột để chọn vùng chụp, nhấn Enter để xác nhận
-        - Nếu chọn thủ công: Nhập phần trăm thụt lề từ trên và trái
-        - Một cửa sổ xem trước sẽ hiện ra. Hãy xem và đóng nó lại, sau đó nhập `ok` nếu đã vừa ý, hoặc `thử lại` để làm lại.
-    -   **Căn chỉnh đường cắt:** 
-        - Chọn phương pháp xử lý slide: Chia thành 2 phần (Đề + Đáp án) hoặc OCR nguyên 1 slide
-        - Nếu chọn chia slide: Nhập phần trăm cắt từ dưới lên cho phần đáp án
-        - Nếu chọn OCR nguyên slide: Không cần cắt, sử dụng toàn bộ vùng đã chọn
-        - Xem trước và xác nhận lựa chọn
+3.  Với công cụ tạo PDF trắc nghiệm `tao_pdf_trac_nghiem.py`, chương trình sẽ hướng dẫn bạn qua 3 lần chọn bằng chuột (DPI-safe):
+    -   **Chọn Vùng chính (Main Region):**
+        - Kéo chuột khoanh toàn bộ khu vực chứa cả đề và đáp án.
+        - Preview sẽ hiển thị; nhập `ok` để xác nhận hoặc chọn lại.
+    -   **Chọn Vùng Câu hỏi (Question Region):**
+        - Kéo chuột khoanh đúng phần đề bài ở BÊN TRONG vùng chính.
+    -   **Chọn Vùng Đáp án (Answer Region):**
+        - Kéo chuột khoanh đúng phần đáp án tham khảo ở BÊN TRONG vùng chính.
+    -   Hệ thống sẽ hiển thị preview 2 ảnh (đề/đáp án) đúng theo vùng bạn đã chọn.
+    -   Lưu ý: Toạ độ đã được chuẩn hoá DPI giữa Tkinter và PyAutoGUI để tránh lệch trên Windows (125%, 150%, ...).
 
 ### Bước 3: Nhập thông tin và Bắt đầu
 
@@ -106,7 +105,7 @@ pip install -r requirements.txt
     -   **Tùy chọn sử dụng Gemini:** Chọn có (y) hoặc không (n) để sử dụng Gemini định dạng câu hỏi.
     -   **Khóa API Gemini:** Chỉ cần nhập nếu chọn sử dụng Gemini.
 2.  Chương trình sẽ xác thực OCR.space API key.
-3.  Chương trình sẽ bắt đầu đếm ngược 5 giây. **TRONG LÚC NÀY, HÃY NHANH CHÓNG CLICK LẠI VÀO CỬA SỔ TRÌNH DUYỆT ĐANG Ở CHẾ ĐỘ TOÀN MÀN HÌNH.**
+3.  Chương trình sẽ bắt đầu đếm ngược 5 giây. **TRONG LÚC NÀY, HÃY NHANH CHÓNG CLICK LẠI VÀO CỬA SỔ TRÌNH DUYỆT Ở MÀN HÌNH CHÍNH (PRIMARY) VÀ CHẾ ĐỘ TOÀN MÀN HÌNH.**
 
 ### Bước 4: Xem kết quả
 

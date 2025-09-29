@@ -14,7 +14,7 @@ ai_quiz_helper/
 └── venv/                  # Thư mục môi trường ảo Python
 ```
 
-## 2. Phân tích các Thành phần Cốt lõi (`main.py`)
+## 2. Phân tích các Thành phần Cốt lõi (`main.py` và các công cụ liên quan)
 
 -   **`play_sound(sound_type)`**: Sử dụng thư viện `winsound` (chỉ trên Windows) để cung cấp phản hồi âm thanh. Được thiết kế để không làm crash chương trình nếu không phải Windows hoặc không phát được âm thanh.
 
@@ -31,6 +31,20 @@ ai_quiz_helper/
     -   Đây là nơi quan trọng nhất để tinh chỉnh nếu muốn thay đổi định dạng đầu ra.
 
 -   **`calibrate_main_region(...)` & `calibrate_split_line(...)`**: Cung cấp quy trình tương tác cho người dùng để xác định chính xác các vùng cần chụp ảnh thông qua các vòng lặp `while`, cho phép thử lại đến khi hài lòng.
+
+### 2.1. `tao_pdf_trac_nghiem.py` (tạo PDF từ ảnh chụp)
+
+-   Sử dụng lớp `MouseCalibrationTool` (Tkinter) để chọn vùng bằng chuột. Toạ độ được quy đổi DPI-safe:
+    -   `scale_x = pyautogui.size().width / root.winfo_screenwidth()`
+    -   `scale_y = pyautogui.size().height / root.winfo_screenheight()`
+    -   Đảm bảo khớp trên Windows với các mức scale 125%, 150%, ...
+-   Quy trình chọn:
+    1) Chọn Vùng chính (bao gồm đề + đáp án)
+    2) Chọn Vùng Câu hỏi
+    3) Chọn Vùng Đáp án
+-   Hai vùng cuối được kẹp vào trong vùng chính bằng `_clamp_region_to_bounds`.
+-   Cờ cấu hình `ENFORCE_NON_OVERLAP` (mặc định False): nếu bật, hệ thống tự dịch vùng đáp án bắt đầu phía dưới vùng câu hỏi để tránh chồng lấn.
+-   Chụp ảnh với `pyautogui.screenshot(path, region=(left, top, width, height))` và gộp PDF bằng `fpdf2`.
 
 -   **`capture_and_process(...)`**: Vòng lặp chính xử lý hàng loạt. Với mỗi câu hỏi, nó thực hiện chuỗi hành động: chụp 2 ảnh -> OCR 2 ảnh -> gửi 2 văn bản cho Gemini -> lưu kết quả -> nhấn phím di chuyển.
 

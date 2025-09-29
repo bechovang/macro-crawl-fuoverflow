@@ -1,6 +1,6 @@
 # Hướng dẫn Canh chỉnh bằng Chuột
 
-## 🖱️ Công cụ Canh chỉnh Vùng chụp
+## 🖱️ Công cụ Canh chỉnh Vùng chụp (DPI-safe)
 
 Công cụ canh chỉnh bằng chuột giúp bạn chọn vùng chụp chính xác hơn so với phương pháp nhập phần trăm thủ công.
 
@@ -15,8 +15,8 @@ Công cụ canh chỉnh bằng chuột giúp bạn chọn vùng chụp chính x�
    - Nhấn Enter để bắt đầu
 
 3. **Chọn vùng:**
-   - Một cửa sổ mờ sẽ xuất hiện phủ toàn màn hình
-   - Kéo chuột để chọn vùng chứa câu hỏi và đáp án
+   - Một cửa sổ mờ sẽ xuất hiện phủ toàn màn hình (ở **màn hình chính/primary monitor**)
+   - Kéo chuột để chọn vùng. Tọa độ chuột đã được chuẩn hoá DPI để trùng khớp với PyAutoGUI trên Windows (kể cả 125%, 150%).
    - Khung đỏ sẽ hiển thị vùng được chọn
    - Kích thước vùng sẽ hiển thị ở góc trên bên trái
 
@@ -34,16 +34,14 @@ Công cụ canh chỉnh bằng chuột giúp bạn chọn vùng chụp chính x�
 ### 🔧 Tính năng:
 
 - **Hiển thị kích thước:** Kích thước vùng được chọn hiển thị real-time
-- **Thông tin chi tiết:** Sau khi chọn, hiển thị thông tin vị trí và kích thước
-- **Tính phần trăm:** Tự động tính toán phần trăm so với màn hình
+- **DPI-safe:** Toạ độ đã được quy đổi chuẩn giữa Tkinter và PyAutoGUI
 - **Xem trước:** Sau khi chọn, vẫn có thể xem trước để xác nhận
 
 ### ⚠️ Lưu ý:
 
-- Cần kết nối internet để sử dụng OCR.space API
-- Công cụ này chỉ hỗ trợ canh chỉnh vùng chụp chính
-- Đường cắt (chia đề/đáp án) vẫn sử dụng phương pháp nhập phần trăm
-- Nếu gặp lỗi, chương trình sẽ tự động chuyển sang phương pháp thủ công
+- Dùng **màn hình chính (primary monitor)** để chọn vùng. Không di chuyển cửa sổ trình duyệt sau khi căn chỉnh.
+- Với `tao_pdf_trac_nghiem.py`, bạn sẽ chọn 3 lần bằng chuột: Vùng chính → Vùng Câu hỏi → Vùng Đáp án. Preview sẽ hiển thị đúng 2 ảnh như bạn đã chọn.
+- Tọa độ đã DPI-safe. Nếu vẫn lệch, kiểm tra lại tỉ lệ thu phóng Windows và thử chọn lại.
 
 ### 🎯 Ưu điểm:
 
