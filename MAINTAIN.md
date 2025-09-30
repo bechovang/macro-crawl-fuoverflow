@@ -1,78 +1,64 @@
-# Hướng dẫn Bảo trì (Maintenance Guide) - Trợ lý Học tập Trắc nghiệm AI
+# Hướng dẫn Bảo trì (Maintenance Guide) - Công cụ tạo PDF trắc nghiệm
 
-Tài liệu này cung cấp thông tin kỹ thuật về cấu trúc dự án, các thành phần cốt lõi và hướng dẫn bảo trì, khắc phục sự cố cho lập trình viên.
+Tài liệu này mô tả cấu trúc dự án thực tế của repo hiện tại, các thành phần cốt lõi trong `tao_pdf_trac_nghiem.py`, cùng hướng dẫn bảo trì và khắc phục sự cố.
 
 ## 1. Cấu trúc Dự án
 
 ```
-ai_quiz_helper/
-├── main.py              # File thực thi chính, chứa toàn bộ logic
-├── requirements.txt      # Danh sách các thư viện Python phụ thuộc
-├── credentials.json      # File xác thực của Google Cloud (KHÔNG được đưa lên Git)
-├── ket_qua_hoc_tap/      # Thư mục chứa kết quả đầu ra
-│   └── tong_hop_cau_hoi_va_giai_thich.md
-└── venv/                  # Thư mục môi trường ảo Python
+macro-crawl-fuoverflow/
+├── tao_pdf_trac_nghiem.py      # Script chính: chọn vùng, chụp ảnh, ghép PDF
+├── requirements.txt            # Thư viện phụ thuộc
+├── ket_qua_hoc_tap/            # Thư mục kết quả (tự tạo nếu chưa có)
+│   └── images/                 # Ảnh chụp từng câu (được sinh ra khi chạy)
+├── purchase-success.mp3        # Âm báo khi xong một câu (tuỳ chọn)
+├── victory.mp3                 # Âm báo khi hoàn tất (tuỳ chọn)
+├── prompt_ai_after_run.md      # Prompt gợi ý xử lý bằng AI sau khi chạy
+└── ...
 ```
 
-## 2. Phân tích các Thành phần Cốt lõi (`main.py` và các công cụ liên quan)
+## 2. Thành phần Cốt lõi (`tao_pdf_trac_nghiem.py`)
 
--   **`play_sound(sound_type)`**: Sử dụng thư viện `winsound` (chỉ trên Windows) để cung cấp phản hồi âm thanh. Được thiết kế để không làm crash chương trình nếu không phải Windows hoặc không phát được âm thanh.
+ -  `play_sound(sound_type)`: Phát âm thanh bằng `pygame`. Không có âm thanh vẫn chạy bình thường.
 
--   **`validate_gemini_api_key(api_key)`**: Gửi một yêu cầu thử nghiệm nhỏ đến Gemini để xác thực khóa API trước khi thực hiện các tác vụ chính, giúp phát hiện lỗi sớm.
+ -  `show_image_preview(...)` và `show_split_image_preview(...)`: Dùng `matplotlib` hiển thị ảnh xem trước, tạm dừng luồng cho đến khi đóng.
 
--   **`show_image_preview(...)` & `show_split_image_preview(...)`**: Sử dụng `matplotlib` để hiển thị ảnh xem trước một cách đáng tin cậy, khắc phục vấn đề của các trình xem ảnh mặc định. Các hàm này sẽ tạm dừng chương trình cho đến khi cửa sổ xem trước được đóng lại.
+ -  `MouseCalibrationTool` và `calibrate_with_mouse(...)`: Lớp/tiện ích Tkinter toàn màn hình cho phép kéo chuột chọn vùng. Có tính toán tỉ lệ DPI giữa Tkinter và PyAutoGUI để khớp toạ độ.
 
--   **`extract_text_from_image_ocr(...)`**: Cầu nối với Google Cloud. Chịu trách nhiệm gửi ảnh đến Vision API và trả về văn bản thô. Yêu cầu file `credentials.json` hợp lệ.
+ -  `_clamp_region_to_bounds(...)`: Kẹp vùng con vào trong vùng chính, tránh tràn mép.
 
--   **`format_question_and_explanation(...)`**: **Trái tim của ứng dụng**.
-    -   Chứa "prompt" được thiết kế đặc biệt cho việc học tập trắc nghiệm.
-    -   Nhận đầu vào là văn bản câu hỏi và văn bản đáp án.
-    -   Yêu cầu Gemini định dạng câu hỏi (không có đáp án) và viết phần giải thích (có nêu đáp án đúng).
-    -   Đây là nơi quan trọng nhất để tinh chỉnh nếu muốn thay đổi định dạng đầu ra.
+ -  `capture_images(...)`: Vòng lặp chụp ảnh 2 vùng (câu hỏi/đáp án) cho mỗi câu, tự nhấn phím `Right` để sang câu kế tiếp, lưu đường dẫn ảnh.
 
--   **`calibrate_main_region(...)` & `calibrate_split_line(...)`**: Cung cấp quy trình tương tác cho người dùng để xác định chính xác các vùng cần chụp ảnh thông qua các vòng lặp `while`, cho phép thử lại đến khi hài lòng.
+ -  `create_pdf_from_images(...)`: Ghép ảnh câu hỏi và đáp án vào một PDF, giữ tỉ lệ, chèn tiêu đề trang.
 
-### 2.1. `tao_pdf_trac_nghiem.py` (tạo PDF từ ảnh chụp)
+ -  `main()`: Quy trình điều phối: hướng dẫn, căn chỉnh 3 bước, nhập tổng số câu và độ trễ, đếm ngược, chụp hàng loạt, ghép PDF, thông báo hoàn tất.
 
--   Sử dụng lớp `MouseCalibrationTool` (Tkinter) để chọn vùng bằng chuột. Toạ độ được quy đổi DPI-safe:
-    -   `scale_x = pyautogui.size().width / root.winfo_screenwidth()`
-    -   `scale_y = pyautogui.size().height / root.winfo_screenheight()`
-    -   Đảm bảo khớp trên Windows với các mức scale 125%, 150%, ...
--   Quy trình chọn:
-    1) Chọn Vùng chính (bao gồm đề + đáp án)
-    2) Chọn Vùng Câu hỏi
-    3) Chọn Vùng Đáp án
--   Hai vùng cuối được kẹp vào trong vùng chính bằng `_clamp_region_to_bounds`.
--   Cờ cấu hình `ENFORCE_NON_OVERLAP` (mặc định False): nếu bật, hệ thống tự dịch vùng đáp án bắt đầu phía dưới vùng câu hỏi để tránh chồng lấn.
--   Chụp ảnh với `pyautogui.screenshot(path, region=(left, top, width, height))` và gộp PDF bằng `fpdf2`.
+### 2.1. Tùy chọn cấu hình
 
--   **`capture_and_process(...)`**: Vòng lặp chính xử lý hàng loạt. Với mỗi câu hỏi, nó thực hiện chuỗi hành động: chụp 2 ảnh -> OCR 2 ảnh -> gửi 2 văn bản cho Gemini -> lưu kết quả -> nhấn phím di chuyển.
-
--   **`main()`**: Hàm điều phối cấp cao nhất, điều khiển luồng chạy của toàn bộ chương trình từ lúc bắt đầu, qua các bước căn chỉnh, đến khi xử lý hàng loạt và kết thúc.
+-  `ENFORCE_NON_OVERLAP = False`: Nếu bật, sẽ tự điều chỉnh để vùng đáp án bắt đầu ngay dưới đáy vùng câu hỏi, tránh chồng lấn.
+-  Phím chuyển trang mặc định là `Right` (có thể điều chỉnh trực tiếp trong code nếu trang của bạn dùng phím khác).
 
 ## 3. Nhiệm vụ Bảo trì
 
-1.  **Cập nhật Dependencies:**
-    -   Thường xuyên chạy `pip list --outdated` trong môi trường ảo để kiểm tra các phiên bản mới. Cân nhắc cập nhật để có các bản vá lỗi và bảo mật.
+1.  Cập nhật dependencies:
+    -   Chạy `pip list --outdated` trong venv và cân nhắc nâng cấp có kiểm soát.
 
-2.  **Giám sát Chi phí API:**
-    -   **Rất quan trọng!** Thường xuyên truy cập bảng điều khiển Google Cloud để theo dõi chi phí sử dụng của **Cloud Vision API**.
-    -   Theo dõi mức sử dụng của **Gemini API** tại [Google AI Studio](https://aistudio.google.com/app/apikey).
+2.  Kiểm tra tương thích hệ điều hành/Màn hình:
+    -   Test lại khi thay đổi DPI scaling trên Windows (125%, 150%, ...).
+    -   Nếu chuyển sang đa màn hình, đảm bảo canh chỉnh trên màn hình chính (primary).
 
-3.  **Tinh chỉnh Prompt:**
-    -   Nếu chất lượng định dạng hoặc giải thích của Gemini giảm sút hoặc không như ý, nơi đầu tiên cần xem xét và chỉnh sửa là chuỗi `prompt` bên trong hàm `format_question_and_explanation`.
+3.  Quản lý tài nguyên:
+    -   Dọn thư mục `ket_qua_hoc_tap/images` định kỳ để tránh chiếm dụng dung lượng.
+    -   Đảm bảo file âm thanh tồn tại; nếu không cần, có thể xoá để giảm footprint.
 
 ## 4. Hướng dẫn Khắc phục Sự cố
 
-| Vấn đề                                           | Nguyên nhân có thể xảy ra                                                                                                                              | Giải pháp                                                                                                                                                                 |
-| ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Lỗi OCR thất bại / `credentials.json` không hợp lệ** | - File `credentials.json` không tồn tại hoặc sai vị trí.<br>- File JSON không phải của **Service Account**.<br>- API Cloud Vision chưa được bật.<br>- Tài khoản Service Account không có quyền. | - Đảm bảo file `credentials.json` nằm cùng cấp với `main.py`.<br>- Tạo lại và tải về đúng file **Service Account Key** từ Google Cloud Console.<br>- Vào Console để bật API.   |
-| **Lỗi Gemini API**                               | - Khóa API không chính xác.<br>- Hết hạn mức sử dụng (nếu có).                                                                                            | - Kiểm tra lại khóa API bạn đã nhập.<br>- Truy cập Google AI Studio để kiểm tra trạng thái và hạn mức của khóa.                                                                 |
-| **Cửa sổ xem trước không hiển thị**               | - Lỗi cài đặt `matplotlib` hoặc backend đồ họa của nó.                                                                                                    | - Thử chạy lại `pip install --upgrade matplotlib`.<br>- Đảm bảo các thư viện trong `requirements.txt` đã được cài đặt thành công.                                                |
-| **Ảnh chụp bị lệch hoặc sai nội dung**           | - Người dùng di chuyển cửa sổ trình duyệt sau khi căn chỉnh.<br>- Độ phân giải màn hình thay đổi.                                                         | - Chạy lại chương trình để thực hiện lại quy trình căn chỉnh. Đảm bảo cửa sổ trình duyệt giữ nguyên vị trí trong suốt quá trình chạy.                                    |
-| **Không có âm thanh (trên Windows)**              | - Lỗi driver âm thanh của hệ điều hành.                                                                                                                | - Kiểm tra xem các âm thanh hệ thống khác có hoạt động không. Code đã được thiết kế để bỏ qua lỗi này và tiếp tục chạy mà không có âm thanh.                                |
+| Vấn đề | Nguyên nhân có thể | Giải pháp |
+| --- | --- | --- |
+| Cửa sổ xem trước không hiển thị | Backend `matplotlib` lỗi, thiếu GUI backend | Cài đặt/upgrade `matplotlib`; thử chạy lại trong môi trường có GUI |
+| Ảnh chụp bị lệch | Di chuyển cửa sổ/zoom sau khi căn chỉnh; DPI thay đổi | Căn chỉnh lại; giữ nguyên zoom/position trong quá trình chạy |
+| Không phát âm thanh | `pygame` chưa init hoặc thiếu file mp3 | Bỏ qua hoặc kiểm tra file mp3, driver âm thanh |
 
-## 5. Thực hành Bảo mật Tốt nhất
+## 5. Ghi chú khác
 
--   **KHÔNG BAO GIỜ** đưa file `credentials.json` hoặc ghi trực tiếp Khóa API Gemini vào trong code rồi đẩy lên các kho lưu trữ công khai như GitHub.
--   Tạo một file `.gitignore` và thêm `credentials.json`, `venv/`, `ket_qua_hoc_tap/` vào đó để loại trừ chúng khỏi việc commit.
+-   Không có khoá API hoặc dịch vụ đám mây trong phiên bản này; chỉ cần các thư viện Python theo `requirements.txt`.
+-   Khuyến nghị thêm `venv/` và `ket_qua_hoc_tap/` vào `.gitignore` nếu public repo.
